@@ -1,16 +1,16 @@
 let verbose = ref false
 
 let get_file str =
-  let temp2 = Filename.check_suffix str ".mjava" in
-  let file = (if temp2 then str else str^".mjava") in
+  let temp2 = Filename.check_suffix str ".java" in
+  let file = (if temp2 then str else str^".java") in
   let filename = 
     begin
       try
 	let idx = String.rindex str '/' in
 	let temp1 = String.sub str (idx + 1) ((String.length str) - idx - 1) in
-	if temp2 then Filename.chop_suffix temp1 ".mjava" else temp1
+	if temp2 then Filename.chop_suffix temp1 ".java" else temp1
       with Not_found ->
-	if temp2 then Filename.chop_suffix str ".mjava" else str
+	if temp2 then Filename.chop_suffix str ".java" else str
     end
   in
   file, filename
