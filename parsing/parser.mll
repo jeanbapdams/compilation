@@ -11,6 +11,7 @@
     | IDENT s -> print_string "IDENT("; print_string s; print_string ")"
 	| PACKAGE -> print_string "PACKAGE"
 	| DOT -> print_string "DOT"
+	| SEMICOLON -> print_string "SEMICOLON"
 
 }
 
@@ -28,8 +29,9 @@ rule nexttoken = parse
   | eof           { EOF }
   (* | real as nb    { FLOAT (float_of_string nb) } *)
   | "package"	  { PACKAGE }
-  | '.'			  {DOT} (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
-  | ident as str {IDENT str}
+  | '.'			  { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
+  | ';'			  { SEMICOLON }
+  | ident as str  { IDENT str }
 	
 	
 

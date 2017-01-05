@@ -1,12 +1,13 @@
 %{
-	(*open Types*)
-	type package = string list
+	open Types
+	(*type package = string list*)
 %}
 
 %token EOF
 %token PACKAGE
 %token <string> IDENT
 %token DOT
+%token SEMICOLON
 
 %start prog
 %type <package> prog
@@ -19,7 +20,7 @@ prog:
 	| c = code EOF		{c}
 
 code:
-	| PACKAGE l=IDENT DOT r=IDENT DOT s=IDENT {[l;r;s]}
+	| PACKAGE l=separated_list(DOT, IDENT) SEMICOLON {l}
 
 
 
