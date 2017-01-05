@@ -1,0 +1,1 @@
+type package = string list
