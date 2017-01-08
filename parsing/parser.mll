@@ -9,7 +9,9 @@
     | OPEN_PAR | CLOSE_PAR
     | OPEN_CURL | CLOSE_CURL
     | OPEN_BRAC | CLOSE_BRAC
+    | QUOTED_CHAR | QUOTED_STRING
     | QUOTE | DOUBLE_QUOTE
+    | PUBLIC | PROTECTED | PRIVATE | STATIC
 *)
 
   let print_lexeme = function
@@ -21,7 +23,10 @@
     | OPEN_PAR -> print_string "OPEN_PAR" | CLOSE_PAR -> print_string "CLOSE_PAR"
     | OPEN_CURL -> print_string "OPEN_CURL" | CLOSE_CURL -> print_string "CLOSE_CURL"
     | OPEN_BRAC -> print_string "OPEN_BRAC" | CLOSE_BRAC -> print_string "CLOSE_BRAC"
+    | QUOTED_CHAR c -> print_string "QUOTED_CHAR("; print_string c; print_string ")";
+    | QUOTED_STRING s -> print_string "QUOTED_string("; print_string s; print_string ")";
     | QUOTE -> print_string "QUOTE" | DOUBLE_QUOTE -> print_string "DOUBLEQUOTE"
+    | PUBLIC -> print_string "PUBLIC" | PROTECTED -> print_string "PROTECTED" | PRIVATE -> print_string "PRIVATE" | STATIC -> print_string "STATIC"
 
 }
 
@@ -30,6 +35,8 @@
 let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
 let real = digit* ('.' digit*)?
+let quoted_char =  ''' _ '''
+let quoted_string = '"'[^'"']*'"'
 let ident = letter (letter | digit | '_')*
 let space = [' ' '\t' '\n']
 
@@ -41,15 +48,21 @@ rule nexttoken = parse
   | "package"	  { PACKAGE }
   | '.'			  { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
   | ';'			  { SEMICOLON }
+  | '('             { OPEN_PAR }
+  | ')'             { CLOSE_PAR }
+  | '{'             { OPEN_CURL }
+  | '}'             { CLOSE_CURL }
+  | '['             { OPEN_BRAC }
+  | ']'             { CLOSE_BRAC }
+  | quoted_char as c    { QUOTED_CHAR c }
+  | quoted_string as s  { QUOTED_STRING s }
+  | '''             { QUOTE }
+  | '"'             { DOUBLE_QUOTE }
+  | "public"        { PUBLIC }
+  | "protected"     { PROTECTED }
+  | "private"       { PRIVATE }
+  | "static"        { STATIC }
   | ident as str  { IDENT str }
-  | '('             { OPEN_PAR }         
-  | ')'             { CLOSE_PAR }         
-  | '{'             { OPEN_CURL }         
-  | '}'             { CLOSE_CURL }         
-  | '['             { OPEN_BRAC }         
-  | ']'             { CLOSE_BRAC }         
-  | '''             { QUOTE }         
-  | '"'             { DOUBLE_QUOTE }         
 	
 	
 
