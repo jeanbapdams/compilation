@@ -5,13 +5,23 @@
     | IDENT of string
 	| PACKAGE
 	| DOT
+    | SEMICOLON
+    | OPEN_PAR | CLOSE_PAR
+    | OPEN_CURL | CLOSE_CURL
+    | OPEN_BRAC | CLOSE_BRAC
+    | QUOTE | DOUBLE_QUOTE
 *)
+
   let print_lexeme = function
     | EOF     -> print_string "EOF"
     | IDENT s -> print_string "IDENT("; print_string s; print_string ")"
 	| PACKAGE -> print_string "PACKAGE"
 	| DOT -> print_string "DOT"
 	| SEMICOLON -> print_string "SEMICOLON"
+    | OPEN_PAR -> print_string "OPEN_PAR" | CLOSE_PAR -> print_string "CLOSE_PAR"
+    | OPEN_CURL -> print_string "OPEN_CURL" | CLOSE_CURL -> print_string "CLOSE_CURL"
+    | OPEN_BRAC -> print_string "OPEN_BRAC" | CLOSE_BRAC -> print_string "CLOSE_BRAC"
+    | QUOTE -> print_string "QUOTE" | DOUBLE_QUOTE -> print_string "DOUBLEQUOTE"
 
 }
 
@@ -32,6 +42,14 @@ rule nexttoken = parse
   | '.'			  { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
   | ';'			  { SEMICOLON }
   | ident as str  { IDENT str }
+  | '('             { OPEN_PAR }         
+  | ')'             { CLOSE_PAR }         
+  | '{'             { OPEN_CURL }         
+  | '}'             { CLOSE_CURL }         
+  | '['             { OPEN_BRAC }         
+  | ']'             { CLOSE_BRAC }         
+  | '''             { QUOTE }         
+  | '"'             { DOUBLE_QUOTE }         
 	
 	
 
