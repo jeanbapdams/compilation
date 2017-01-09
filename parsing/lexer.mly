@@ -4,7 +4,6 @@
 %}
 
 %token EOF
-%token PACKAGE
 %token <string> IDENT
 %token DOT
 %token SEMICOLON
@@ -18,10 +17,6 @@
 %token <string> QUOTED_STRING
 %token QUOTE
 %token DOUBLE_QUOTE
-%token PUBLIC
-%token PROTECTED
-%token PRIVATE
-%token STATIC
 
 %start prog
 %type <package> prog

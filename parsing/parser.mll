@@ -1,4 +1,6 @@
 {
+  (*open Keywords*)
+
 (*
   type lexeme =
     | EOF
@@ -27,6 +29,109 @@
     | QUOTED_STRING s -> print_string "QUOTED_string("; print_string s; print_string ")";
     | QUOTE -> print_string "QUOTE" | DOUBLE_QUOTE -> print_string "DOUBLEQUOTE"
     | PUBLIC -> print_string "PUBLIC" | PROTECTED -> print_string "PROTECTED" | PRIVATE -> print_string "PRIVATE" | STATIC -> print_string "STATIC"
+    | ABSTRACT -> print_string "ABSTRACT"
+    | CONTINUE -> print_string "CONTINUE"
+    | ASSERT -> print_string "ASSERT"
+    | BOOLEAN -> print_string "BOOLEAN"
+    | BREAK -> print_string "BREAK"
+    | BYTE -> print_string "BYTE"
+    | CASE -> print_string "CASE"
+    | CATCH -> print_string "CATCH"
+    | CHAR -> print_string "CHAR"
+    | CLASS -> print_string "CLASS"
+    | CONST -> print_string "CONST"
+    | FOR -> print_string "FOR"
+    | DEFAULT -> print_string "DEFAULT"
+    | DO -> print_string "DO"
+    | DOUBLE -> print_string "DOUBLE"
+    | ELSE -> print_string "ELSE"
+    | ENUM -> print_string "ENUM"
+    | EXTENDS -> print_string "EXTENDS"
+    | FINAL -> print_string "FINAL"
+    | FINALLY -> print_string "FINALLY"
+    | FLOAT -> print_string "FLOAT"
+    | NEW -> print_string "NEW"
+    | IF -> print_string "IF"
+    | GOTO -> print_string "GOTO"
+    | IMPLEMENTS -> print_string "IMPLEMENTS"
+    | IMPORT -> print_string "IMPORT"
+    | INSTANCEOF -> print_string "INSTANCEOF"
+    | INT -> print_string "INT"
+    | INTERFACE -> print_string "INTERFACE"
+    | LONG -> print_string "LONG"
+    | NATIVE -> print_string "NATIVE"
+    | SWITCH -> print_string "SWITCH"
+    | PACKAGE -> print_string "PACKAGE"
+    | PRIVATE -> print_string "PRIVATE"
+    | PROTECTED -> print_string "PROTECTED"
+    | PUBLIC -> print_string "PUBLIC"
+    | RETURN -> print_string "RETURN"
+    | SHORT -> print_string "SHORT"
+    | STATIC -> print_string "STATIC"
+    | STRICTFP -> print_string "STRICFP"
+    | SUPER -> print_string "SUPER"
+    | SYNCHRONIZED -> print_string "SYNCHRONIZED"
+    | THIS -> print_string "THIS"
+    | THROW -> print_string "THROW"
+    | THROWS -> print_string "THROWS"
+    | TRANSIENT -> print_string "TRANSIENT"
+    | TRY -> print_string "TRY"
+    | VOID -> print_string "VOID"
+    | VOLATILE -> print_string "VOLATILE"
+    | WHILE  -> print_string "WHILE"
+    | _ -> print_string "autre"
+    
+let string_to_keyword s = match s with
+|"abstract" ->      ABSTRACT     
+|"continue" ->      CONTINUE
+|"assert" ->        ASSERT
+|"boolean" ->       BOOLEAN
+|"break" ->         BREAK
+|"byte" ->          BYTE
+|"case" ->          CASE
+|"catch" ->         CATCH
+|"char" ->          CHAR
+|"class" ->         CLASS
+|"const" ->         CONST
+|"for" ->           FOR
+|"default" ->       DEFAULT
+|"do" ->            DO
+|"double" ->        DOUBLE
+|"else" ->          ELSE
+|"enum" ->          ENUM
+|"extends" ->       EXTENDS
+|"final" ->         FINAL
+|"finally" ->       FINALLY
+|"float" ->         FLOAT
+|"new" ->           NEW
+|"if" ->            IF
+|"goto" ->          GOTO
+|"implements" ->    IMPLEMENTS
+|"import" ->        IMPORT
+|"instanceof" ->    INSTANCEOF
+|"int" ->           INT
+|"interface" ->     INTERFACE
+|"long" ->          LONG
+|"native" ->        NATIVE
+|"switch" ->        SWITCH
+|"package" ->       PACKAGE
+|"private" ->       PRIVATE
+|"protected" ->     PROTECTED
+|"public" ->        PUBLIC
+|"return" ->        RETURN
+|"short" ->         SHORT
+|"static" ->        STATIC
+|"stricfp" ->       STRICTFP
+|"super" ->         SUPER
+|"synchronized"->   SYNCHRONIZED
+|"this" ->          THIS
+|"throw" ->         THROW
+|"throws" ->        THROWS
+|"transient" ->     TRANSIENT
+|"try" ->           TRY
+|"void" ->          VOID
+|"volatile" ->      VOLATILE
+|"while" ->         WHILE
 
 }
 
@@ -39,15 +144,19 @@ let quoted_char =  ''' _ '''
 let quoted_string = '"'[^'"']*'"'
 let ident = letter (letter | digit | '_')*
 let space = [' ' '\t' '\n']
+let comment = ("//" [^'\n']* '\n')
+
+let keywords = "abstract" | "continue" | "assert" | "boolean" | "break" | "byte" | "case" | "catch" | "char" | "class" | "const" | "for" | "default" | "do" | "double" | "else" | "enum" | "extends" | "final" | "finally" | "float" | "new" | "if" | "goto" | "implements" | "import" | "instanceof" | "int" | "interface" | "long" | "native" | "switch" | "package" | "private" | "protected" | "public" | "return" | "short" | "static" | "strictfp" | "super" | "synchronized" | "this" | "throw" | "throws" | "transient" | "try" | "void" | "volatile" | "while"
 
 
 rule nexttoken = parse
-  | space+        { nexttoken lexbuf }
-  | eof           { EOF }
+  | space+          { nexttoken lexbuf }
+  | comment         { nexttoken lexbuf }
+  | eof             { EOF }
   (* | real as nb    { FLOAT (float_of_string nb) } *)
-  | "package"	  { PACKAGE }
-  | '.'			  { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
-  | ';'			  { SEMICOLON }
+  | "package"	    { PACKAGE }
+  | '.'			    { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
+  | ';'			    { SEMICOLON }
   | '('             { OPEN_PAR }
   | ')'             { CLOSE_PAR }
   | '{'             { OPEN_CURL }
@@ -58,11 +167,8 @@ rule nexttoken = parse
   | quoted_string as s  { QUOTED_STRING s }
   | '''             { QUOTE }
   | '"'             { DOUBLE_QUOTE }
-  | "public"        { PUBLIC }
-  | "protected"     { PROTECTED }
-  | "private"       { PRIVATE }
-  | "static"        { STATIC }
-  | ident as str  { IDENT str }
+  | keywords as kw  { string_to_keyword kw }
+  | ident as str    { IDENT str }
 	
 	
 
