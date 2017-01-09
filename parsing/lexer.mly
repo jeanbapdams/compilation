@@ -7,6 +7,7 @@
 %token PACKAGE
 %token <string> IDENT
 %token DOT
+%token COMMA
 %token SEMICOLON
 %token OPEN_PAR
 %token CLOSE_PAR
@@ -22,13 +23,10 @@
 %token PROTECTED
 %token PRIVATE
 %token STATIC
+%token <string> INTEGER
 %token <string> REAL
-%token PLUS
-%token MINUS
-%token MUL
-%token DIV
-%token MOD
-%token POWER
+%token TRUE
+%token FALSE
 
 %start prog
 %type <package> prog
