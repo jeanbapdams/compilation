@@ -1,34 +1,17 @@
 {
-  (*open Keywords*)
-
-(*
-  type lexeme =
-    | EOF
-    | IDENT of string
-	| PACKAGE
-	| DOT
-    | SEMICOLON
-    | OPEN_PAR | CLOSE_PAR
-    | OPEN_CURL | CLOSE_CURL
-    | OPEN_BRAC | CLOSE_BRAC
-    | QUOTED_CHAR | QUOTED_STRING
-    | QUOTE | DOUBLE_QUOTE
-    | PUBLIC | PROTECTED | PRIVATE | STATIC
-*)
 
   let print_lexeme = function
     | EOF     -> print_string "EOF"
     | IDENT s -> print_string "IDENT("; print_string s; print_string ")"
-	| PACKAGE -> print_string "PACKAGE"
 	| DOT -> print_string "DOT"
+    | COMMA -> print_string "COMMA"
 	| SEMICOLON -> print_string "SEMICOLON"
     | OPEN_PAR -> print_string "OPEN_PAR" | CLOSE_PAR -> print_string "CLOSE_PAR"
     | OPEN_CURL -> print_string "OPEN_CURL" | CLOSE_CURL -> print_string "CLOSE_CURL"
     | OPEN_BRAC -> print_string "OPEN_BRAC" | CLOSE_BRAC -> print_string "CLOSE_BRAC"
     | QUOTED_CHAR c -> print_string "QUOTED_CHAR("; print_string c; print_string ")";
-    | QUOTED_STRING s -> print_string "QUOTED_string("; print_string s; print_string ")";
+    | QUOTED_STRING s -> print_string "QUOTED_STRING("; print_string s; print_string ")";
     | QUOTE -> print_string "QUOTE" | DOUBLE_QUOTE -> print_string "DOUBLEQUOTE"
-    | PUBLIC -> print_string "PUBLIC" | PROTECTED -> print_string "PROTECTED" | PRIVATE -> print_string "PRIVATE" | STATIC -> print_string "STATIC"
     | ABSTRACT -> print_string "ABSTRACT"
     | CONTINUE -> print_string "CONTINUE"
     | ASSERT -> print_string "ASSERT"
@@ -79,7 +62,11 @@
     | VOID -> print_string "VOID"
     | VOLATILE -> print_string "VOLATILE"
     | WHILE  -> print_string "WHILE"
-    | _ -> print_string "autre"
+    | INTEGER n -> print_string "INTEGER("; print_string n; print_string ")"
+    | REAL n -> print_string "REAL("; print_string n; print_string ")"
+    | PLUS -> print_string "PLUS" | MINUS -> print_string "MINUS" | MUL -> print_string "MUL" | DIV -> print_string "DIV" | MOD -> print_string "MOD" | POWER -> print_string "POWER"
+    | TRUE -> print_string "TRUE" | FALSE -> print_string "FALSE"
+    | _ -> print_string "to be implemented"
     
 let string_to_keyword s = match s with
 |"abstract" ->      ABSTRACT     
@@ -137,9 +124,11 @@ let string_to_keyword s = match s with
 
 
 
+let space = [' ' '\t' '\n']
 let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
-let real = digit* ('.' digit*)?
+let integer = digit+
+let real = digit+ '.' digit+
 let quoted_char =  ''' _ '''
 let quoted_string = '"'[^'"']*'"'
 let ident = letter (letter | digit | '_')*
@@ -148,14 +137,14 @@ let comment = ("//" [^'\n']* '\n')
 
 let keywords = "abstract" | "continue" | "assert" | "boolean" | "break" | "byte" | "case" | "catch" | "char" | "class" | "const" | "for" | "default" | "do" | "double" | "else" | "enum" | "extends" | "final" | "finally" | "float" | "new" | "if" | "goto" | "implements" | "import" | "instanceof" | "int" | "interface" | "long" | "native" | "switch" | "package" | "private" | "protected" | "public" | "return" | "short" | "static" | "strictfp" | "super" | "synchronized" | "this" | "throw" | "throws" | "transient" | "try" | "void" | "volatile" | "while"
 
+let operator = "=" | ">" | "<" | "!" | "~" | "?" | ";" | "==" | ">=" | "<=" | "!=" | "&" | "| " | "&&" | "| | " | "++" | "--" | "+" | "-" | "*" | "/" | "^" | "%" | "+=" | "-=" | "*=" | "/=" | "^=" | "%=" | "<<" | "<<<" | ">>" | ">>>" | "<<=" | "<<<=" | ">>=" | ">>>="
 
 rule nexttoken = parse
   | space+          { nexttoken lexbuf }
   | comment         { nexttoken lexbuf }
   | eof             { EOF }
-  (* | real as nb    { FLOAT (float_of_string nb) } *)
-  | "package"	    { PACKAGE }
   | '.'			    { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
+  | ','             { COMMA }
   | ';'			    { SEMICOLON }
   | '('             { OPEN_PAR }
   | ')'             { CLOSE_PAR }
@@ -169,9 +158,11 @@ rule nexttoken = parse
   | '"'             { DOUBLE_QUOTE }
   | keywords as kw  { string_to_keyword kw }
   | ident as str    { IDENT str }
-	
-	
-
+  | integer as n    { INTEGER n }
+  | real as n       { REAL n }
+  | "true"          { TRUE }
+  | "false"         { FALSE }
+  | operator as op  { string_to_operator op }
 
 
 { 

@@ -6,6 +6,7 @@
 %token EOF
 %token <string> IDENT
 %token DOT
+%token COMMA
 %token SEMICOLON
 %token OPEN_PAR
 %token CLOSE_PAR
@@ -17,6 +18,11 @@
 %token <string> QUOTED_STRING
 %token QUOTE
 %token DOUBLE_QUOTE
+
+%token <string> INTEGER
+%token <string> REAL
+%token TRUE
+%token FALSE
 
 %start prog
 %type <package> prog
