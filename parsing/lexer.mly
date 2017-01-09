@@ -22,6 +22,13 @@
 %token PROTECTED
 %token PRIVATE
 %token STATIC
+%token <string> REAL
+%token PLUS
+%token MINUS
+%token MUL
+%token DIV
+%token MOD
+%token POWER
 
 %start prog
 %type <package> prog

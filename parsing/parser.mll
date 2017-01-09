@@ -12,6 +12,8 @@
     | QUOTED_CHAR | QUOTED_STRING
     | QUOTE | DOUBLE_QUOTE
     | PUBLIC | PROTECTED | PRIVATE | STATIC
+    | REAL
+    | PLUS | MINUS | MUL | DIV | MOD | POWER
 *)
 
   let print_lexeme = function
@@ -27,6 +29,8 @@
     | QUOTED_STRING s -> print_string "QUOTED_string("; print_string s; print_string ")";
     | QUOTE -> print_string "QUOTE" | DOUBLE_QUOTE -> print_string "DOUBLEQUOTE"
     | PUBLIC -> print_string "PUBLIC" | PROTECTED -> print_string "PROTECTED" | PRIVATE -> print_string "PRIVATE" | STATIC -> print_string "STATIC"
+    | REAL n -> print_string "REAL("; print_string n; print_string ")"
+    | PLUS -> print_string "PLUS" | MINUS -> print_string "MINUS" | MUL -> print_string "MUL" | DIV -> print_string "DIV" | MOD -> print_string "MOD" | POWER -> print_string "POWER"
 
 }
 
@@ -34,7 +38,7 @@
 
 let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
-let real = digit* ('.' digit*)?
+let real = digit+ ('.' digit*)?
 let quoted_char =  ''' _ '''
 let quoted_string = '"'[^'"']*'"'
 let ident = letter (letter | digit | '_')*
@@ -44,7 +48,6 @@ let space = [' ' '\t' '\n']
 rule nexttoken = parse
   | space+        { nexttoken lexbuf }
   | eof           { EOF }
-  (* | real as nb    { FLOAT (float_of_string nb) } *)
   | "package"	  { PACKAGE }
   | '.'			  { DOT } (* si le point est entouré d'espaces, les espcaces ne seront pas détectés*)
   | ';'			  { SEMICOLON }
@@ -62,6 +65,13 @@ rule nexttoken = parse
   | "protected"     { PROTECTED }
   | "private"       { PRIVATE }
   | "static"        { STATIC }
+  | real as n       { REAL n }
+  | '+'             { PLUS }
+  | '-'             { MINUS }
+  | '*'             { MUL }
+  | '/'             { DIV }
+  | '%'             { MOD }
+  | '^'             { POWER }
   | ident as str  { IDENT str }
 	
 	
