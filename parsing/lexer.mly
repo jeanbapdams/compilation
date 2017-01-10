@@ -25,18 +25,38 @@
 %token FALSE
 
 %start prog
-%type <package> prog
+%type <package * variableDeclarator list> prog
 
 
 
 %%
 
 prog:
-	| c = code EOF		{c}
+	| p=package c=code EOF		{(p,c)}
+    | c = code EOF          {(NoPackage,c)}
+    | EOF                   {(NoPackage,[])}
+
+package:
+	| PACKAGE l=separated_list(DOT, IDENT) SEMICOLON {Package l}
 
 code:
-	| PACKAGE l=separated_list(DOT, IDENT) SEMICOLON {l}
+    | f=fieldDeclaration SEMICOLON c=code   { f::c }
+    | EOF              {[]}
 
+fieldDeclaration:
+    | fm=fieldModifier fd=fieldDeclaration 
+    {
+        match fd with 
+        | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
+        | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
+    }
+        | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
+
+fieldModifier:
+    | STATIC    { STATIC }
+    | FINAL     { FINAL }
+    | TRANSIENT { TRANSIENT }
+    | VOLATILE  { VOLATILE }
 
 
 %%
