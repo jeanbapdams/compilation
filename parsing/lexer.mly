@@ -24,8 +24,8 @@
 %token TRUE
 %token FALSE
 
-%start prog
-%type <package> prog
+%start <program> prog
+(*%type <program> prog*)
 
 
 
@@ -34,9 +34,25 @@
 prog:
 	| c = code EOF		{c}
 
-code:
-	| PACKAGE l=separated_list(DOT, IDENT) SEMICOLON {l}
+code:		
+	| PACKAGE p=package IMPORT i=imports CLASS c=classDeclaration { {package_name= p; imports_list = i; class_or_interface= c} }
+	| IMPORT i=imports CLASS c=classDeclaration { {package_name= []; imports_list= i; class_or_interface= c} }
+	| PACKAGE p=package CLASS c=classDeclaration { {package_name= p; imports_list= []; class_or_interface= c} }
+	| CLASS c=classDeclaration { {package_name= []; imports_list= []; class_or_interface= c} }
+	
 
+package:
+	| l=separated_list(DOT, IDENT) SEMICOLON {l}
 
+imports:
+	| i=import IMPORT l=imports { i::l }
+	| i=import {[i]}
+import:
+	| l=separated_list(DOT, IDENT) SEMICOLON {l}
+	| l=separated_list(DOT, IDENT) DOT MUL SEMICOLON {l}
+
+classDeclaration:
+	| s=IDENT {s}
+	
 
 %%
