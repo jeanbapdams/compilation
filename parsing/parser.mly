@@ -45,11 +45,16 @@ package:
 	| l=separated_list(DOT, IDENT) SEMICOLON {l}
 
 imports:
-	| i=import IMPORT l=imports { i::l }
+	| i=import IMPORT l=imports{ i::l }
 	| i=import {[i]}
 import:
-	| l=separated_list(DOT, IDENT) SEMICOLON {l}
-	| l=separated_list(DOT, IDENT) DOT MUL SEMICOLON {l@["*"]}
+	| l=IDENT SEMICOLON {[l]}
+	| s=idents DOT l=IDENT SEMICOLON {s@[l]}
+	(* | l=separated_list(DOT, all) SEMICOLON {l} *)
+
+idents:
+	| l=separated_list(DOT, IDENT) {l}
+
 
 classDeclaration:
 	| s=IDENT {s}
