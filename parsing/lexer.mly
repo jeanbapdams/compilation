@@ -32,14 +32,14 @@
 %%
 
 prog:
-	| c = code EOF		{c}
+    | c = code EOF          {c}
+    | EOF                   {{package_name=NoPackage; imports_list= []; class_or_interface= ""}}
 
 code:		
-	| PACKAGE p=package IMPORT i=imports CLASS c=classDeclaration { {package_name= p; imports_list = i; class_or_interface= c} }
-	| IMPORT i=imports CLASS c=classDeclaration { {package_name= []; imports_list= i; class_or_interface= c} }
-	| PACKAGE p=package CLASS c=classDeclaration { {package_name= p; imports_list= []; class_or_interface= c} }
-	| CLASS c=classDeclaration { {package_name= []; imports_list= []; class_or_interface= c} }
-	
+	| PACKAGE p=package IMPORT i=imports CLASS c=classDeclaration { {package_name= Package(p); imports_list = i; class_or_interface= c} }
+	| IMPORT i=imports CLASS c=classDeclaration { {package_name= NoPackage; imports_list= i; class_or_interface= c} }
+	| PACKAGE p=package CLASS c=classDeclaration { {package_name= Package(p); imports_list= []; class_or_interface= c} }
+	| CLASS c=classDeclaration { {package_name= NoPackage; imports_list= []; class_or_interface= c} }
 
 package:
 	| l=separated_list(DOT, IDENT) SEMICOLON {l}
@@ -49,10 +49,24 @@ imports:
 	| i=import {[i]}
 import:
 	| l=separated_list(DOT, IDENT) SEMICOLON {l}
-	| l=separated_list(DOT, IDENT) DOT MUL SEMICOLON {l}
+	| l=separated_list(DOT, IDENT) DOT MUL SEMICOLON {l@["*"]}
 
 classDeclaration:
 	| s=IDENT {s}
-	
+
+fieldDeclaration:
+    | fm=fieldModifier fd=fieldDeclaration 
+    {
+        match fd with 
+        | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
+        | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
+    }
+        | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
+
+fieldModifier:
+    | STATIC    { STATIC }
+    | FINAL     { FINAL }
+    | TRANSIENT { TRANSIENT }
+    | VOLATILE  { VOLATILE }
 
 %%

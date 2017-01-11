@@ -64,62 +64,138 @@
     | WHILE  -> print_string "WHILE"
     | INTEGER n -> print_string "INTEGER("; print_string n; print_string ")"
     | REAL n -> print_string "REAL("; print_string n; print_string ")"
-    | PLUS -> print_string "PLUS" | MINUS -> print_string "MINUS" | MUL -> print_string "MUL" | DIV -> print_string "DIV" | MOD -> print_string "MOD" | POWER -> print_string "POWER"
     | TRUE -> print_string "TRUE" | FALSE -> print_string "FALSE"
-    | _ -> print_string "to be implemented"
+	| EQUAL -> print_string "EQUAL"
+	| GREATER -> print_string "GREATER"
+	| SMALLER -> print_string "SMALLER"
+	| EXCLAMATION -> print_string "EXCLAMATION"
+	| TILDE -> print_string "TILDE"
+	| QUESTION -> print_string "QUESTION"
+	| COLON -> print_string "COLON"
+	| DOUBLEEQUAL -> print_string "DOUBLEEQUAL"
+	| GREATEROREQUAL -> print_string "GREATEROREQUAL"
+	| SMALLEROREQUAL -> print_string "SMALLEROREQUAL"
+	| DIFFERENT -> print_string "DIFFERENT"
+	| AND -> print_string "AND"
+	| OR -> print_string "OR"
+	| DOUBLEAND -> print_string "DOUBLEAND"
+	| DOUBLEOR -> print_string "DOUBLEOR"
+	| INC -> print_string "INC"
+	| DEC -> print_string "DEC"
+	| PLUS -> print_string "PLUS"
+	| MINUS -> print_string "MINUS"
+	| MUL -> print_string "MUL"
+	| DIV -> print_string "DIV"
+	| POWER -> print_string "POWER"
+	| MOD -> print_string "MOD"
+	| PLUSEQUAL -> print_string "PLUSEQUAL"
+	| MINUSEQUAL -> print_string "MINUSEQUAL"
+	| MULEQUAL -> print_string "MULEQUAL"
+	| DIVEQUAL -> print_string "DIVEQUAL"
+	| POWEREQUAL -> print_string "POWEREQUAL"
+	| MODEQUAL -> print_string "MODEQUAL"
+	| DOUBLECHEVRONLEFT -> print_string "DOUBLECHEVRONLEFT"
+	| TRIPLECHEVRONLEFT -> print_string "TRIPLECHEVRONLEFT"
+	| DOUBLECHEVRONRIGHT -> print_string "DOUBLECHEVRONRIGHT"
+	| TRIPLECHEVRONRIGHT -> print_string "TRIPLECHEVRONRIGHT"
+	| DOUBLECHEVRONLEFTEQUAL -> print_string "DOUBLECHEVRONLEFTEQUAL"
+	| TRIPLECHEVRONLEFTEQUAL -> print_string "TRIPLECHEVRONLEFTEQUAL"
+	| DOUBLECHEVRONRIGHTEQUAL -> print_string "DOUBLECHEVRONRIGHTEQUAL"
+	| TRIPLECHEVRONRIGHTEQUAL -> print_string "TRIPLECHEVRONRIGHTEQUAL"
+	| NOTANOPERATOR -> print_string "NOTANOPERATOR"
     
 let string_to_keyword s = match s with
-|"abstract" ->      ABSTRACT     
-|"continue" ->      CONTINUE
-|"assert" ->        ASSERT
-|"boolean" ->       BOOLEAN
-|"break" ->         BREAK
-|"byte" ->          BYTE
-|"case" ->          CASE
-|"catch" ->         CATCH
-|"char" ->          CHAR
-|"class" ->         CLASS
-|"const" ->         CONST
-|"for" ->           FOR
-|"default" ->       DEFAULT
-|"do" ->            DO
-|"double" ->        DOUBLE
-|"else" ->          ELSE
-|"enum" ->          ENUM
-|"extends" ->       EXTENDS
-|"final" ->         FINAL
-|"finally" ->       FINALLY
-|"float" ->         FLOAT
-|"new" ->           NEW
-|"if" ->            IF
-|"goto" ->          GOTO
-|"implements" ->    IMPLEMENTS
-|"import" ->        IMPORT
-|"instanceof" ->    INSTANCEOF
-|"int" ->           INT
-|"interface" ->     INTERFACE
-|"long" ->          LONG
-|"native" ->        NATIVE
-|"switch" ->        SWITCH
-|"package" ->       PACKAGE
-|"private" ->       PRIVATE
-|"protected" ->     PROTECTED
-|"public" ->        PUBLIC
-|"return" ->        RETURN
-|"short" ->         SHORT
-|"static" ->        STATIC
-|"stricfp" ->       STRICTFP
-|"super" ->         SUPER
-|"synchronized"->   SYNCHRONIZED
-|"this" ->          THIS
-|"throw" ->         THROW
-|"throws" ->        THROWS
-|"transient" ->     TRANSIENT
-|"try" ->           TRY
-|"void" ->          VOID
-|"volatile" ->      VOLATILE
-|"while" ->         WHILE
+    |"abstract" ->      ABSTRACT     
+    |"continue" ->      CONTINUE
+    |"assert" ->        ASSERT
+    |"boolean" ->       BOOLEAN
+    |"break" ->         BREAK
+    |"byte" ->          BYTE
+    |"case" ->          CASE
+    |"catch" ->         CATCH
+    |"char" ->          CHAR
+    |"class" ->         CLASS
+    |"const" ->         CONST
+    |"for" ->           FOR
+    |"default" ->       DEFAULT
+    |"do" ->            DO
+    |"double" ->        DOUBLE
+    |"else" ->          ELSE
+    |"enum" ->          ENUM
+    |"extends" ->       EXTENDS
+    |"final" ->         FINAL
+    |"finally" ->       FINALLY
+    |"float" ->         FLOAT
+    |"new" ->           NEW
+    |"if" ->            IF
+    |"goto" ->          GOTO
+    |"implements" ->    IMPLEMENTS
+    |"import" ->        IMPORT
+    |"instanceof" ->    INSTANCEOF
+    |"int" ->           INT
+    |"interface" ->     INTERFACE
+    |"long" ->          LONG
+    |"native" ->        NATIVE
+    |"switch" ->        SWITCH
+    |"package" ->       PACKAGE
+    |"private" ->       PRIVATE
+    |"protected" ->     PROTECTED
+    |"public" ->        PUBLIC
+    |"return" ->        RETURN
+    |"short" ->         SHORT
+    |"static" ->        STATIC
+    |"stricfp" ->       STRICTFP
+    |"super" ->         SUPER
+    |"synchronized"->   SYNCHRONIZED
+    |"this" ->          THIS
+    |"throw" ->         THROW
+    |"throws" ->        THROWS
+    |"transient" ->     TRANSIENT
+    |"try" ->           TRY
+    |"void" ->          VOID
+    |"volatile" ->      VOLATILE
+    |"while" ->         WHILE
+	| _ ->      	    raise (invalid_arg "not a keyword")
 
+let string_to_operator s = match s with
+	| "=" ->	EQUAL
+	| ">" ->	GREATER
+	| "<" ->	SMALLER
+	| "!" ->	EXCLAMATION
+	| "~" ->	TILDE
+	| "?" ->	QUESTION
+	| ";" ->	COLON
+	| "==" ->	DOUBLEEQUAL
+	| ">=" ->	GREATEROREQUAL
+	| "<=" ->	SMALLEROREQUAL
+	| "!=" ->	DIFFERENT
+	| "&" ->	AND
+	| "|" ->	OR
+	| "&&" ->	DOUBLEAND
+	| "||" ->	DOUBLEOR
+	| "++" ->	INC
+	| "--" ->	DEC
+	| "+" ->	PLUS
+	| "-" ->	MINUS
+	| "*" ->	MUL
+	| "/" ->	DIV
+	| "^" ->	POWER
+	| "%" ->	MOD
+	| "+=" ->	PLUSEQUAL
+	| "-=" ->	MINUSEQUAL
+	| "*=" ->	MULEQUAL
+	| "/=" ->	DIVEQUAL
+	| "^=" ->	POWEREQUAL
+	| "%=" ->	MODEQUAL
+	| "<<" ->	DOUBLECHEVRONLEFT
+	| "<<<" ->	TRIPLECHEVRONLEFT
+	| ">>" ->	DOUBLECHEVRONRIGHT
+	| ">>>" ->	TRIPLECHEVRONRIGHT
+	| "<<=" ->	DOUBLECHEVRONLEFTEQUAL
+	| "<<<=" ->	TRIPLECHEVRONLEFTEQUAL
+	| ">>=" ->	DOUBLECHEVRONRIGHTEQUAL
+	| ">>>=" ->	TRIPLECHEVRONRIGHTEQUAL
+	| _ ->	    raise (invalid_arg "not an operator")
 }
 
 
@@ -157,12 +233,12 @@ rule nexttoken = parse
   | '''             { QUOTE }
   | '"'             { DOUBLE_QUOTE }
   | keywords as kw  { string_to_keyword kw }
-  | ident as str    { IDENT str }
+  | operator as op  { string_to_operator op }
   | integer as n    { INTEGER n }
   | real as n       { REAL n }
   | "true"          { TRUE }
   | "false"         { FALSE }
-  | operator as op  { string_to_operator op }
+  | ident as str    { IDENT str }
 
 
 { 
