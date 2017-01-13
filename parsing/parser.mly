@@ -48,13 +48,9 @@ imports:
 	| i=import IMPORT l=imports{ i::l }
 	| i=import {[i]}
 import:
-	| l=IDENT SEMICOLON {[l]}
-	| s=idents DOT l=IDENT SEMICOLON {s@[l]}
-	(* | l=separated_list(DOT, all) SEMICOLON {l} *)
-
-idents:
-	| l=separated_list(DOT, IDENT) {l}
-
+	| i=IDENT SEMICOLON {[i]}
+	| MUL SEMICOLON {["*"]}
+	| i=IDENT DOT l=import {i::l}
 
 classDeclaration:
 	| s=IDENT {s}
