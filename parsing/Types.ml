@@ -28,3 +28,18 @@ type program = {
 	imports_list: import list;
 	class_or_interface: class_or_interface}
 
+type expression = Expression of string
+
+type statement =
+    | EmptyStatement
+    | Expression of expression
+    | IfThen of expression * statement
+    | IfThenElse of expression * statement * statement
+    | Assert of expression
+    | Switch of expression * statement list
+    | While of expression * statement
+    | Do of statement * expression
+(*  | FOR of ... *)
+    | Break
+    | Continue
+    | Block of statement list

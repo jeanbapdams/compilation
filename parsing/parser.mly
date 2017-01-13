@@ -27,7 +27,7 @@
 %start <program> prog
 (*%type <program> prog*)
 
-
+%start <statement> statement
 
 %%
 
@@ -66,12 +66,37 @@ fieldDeclaration:
         | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
         | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
     }
-        | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
+    | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
 
 fieldModifier:
     | STATIC    { STATIC }
     | FINAL     { FINAL }
     | TRANSIENT { TRANSIENT }
     | VOLATILE  { VOLATILE }
+
+block:
+    | OPEN_CURL b=blockStatements CLOSE_CURL    {b}
+
+blockStatements:
+    | s=statement b=blockStatements  {match b with Block l -> Block (s::l) }
+    | s=statement   { Block [s] } 
+statement:
+        | SEMICOLON { EmptyStatement }
+        | e=expression SEMICOLON    {Expression e}
+        | IF OPEN_PAR e=expression CLOSE_PAR s=statement    { IfThen(e,s) }
+        | IF OPEN_PAR e=expression CLOSE_PAR s1=statement ELSE s2=statement    { IfThenElse(e,s1,s2) }
+        | ASSERT e=expression SEMICOLON { Assert e }
+(*        | SWITCH OPEN_PAR e=expression CLOSE_PAR s=switchblock  { Siwtch(e,s) } plus tard*)
+        | WHILE OPEN_PAR e=expression CLOSE_PAR s=statement { While(e,s) }
+        | DO s=statement WHILE OPEN_PAR e=expression CLOSE_PAR SEMICOLON  {Do(s,e) }
+(*      | FOR ... later *)
+        | BREAK SEMICOLON { Break }
+        | CONTINUE SEMICOLON { Continue }
+(* et plus encore plus tard *)
+        | b=block   { b }
+
+expression:
+        | i=IDENT   { Expression i }
+
 
 %%
