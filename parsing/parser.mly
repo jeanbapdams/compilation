@@ -33,16 +33,21 @@
 
 prog:
     | c = code EOF          {c}
-    | EOF                   {{package_name=NoPackage; imports_list= []; class_or_interface= ""}}
+    (*| EOF                   {{package_name=NoPackage; imports_list= []; class_or_interface= }}*)
 
 code:		
-	| PACKAGE p=package IMPORT i=imports CLASS c=classDeclaration { {package_name= Package(p); imports_list = i; class_or_interface= c} }
-	| IMPORT i=imports CLASS c=classDeclaration { {package_name= NoPackage; imports_list= i; class_or_interface= c} }
-	| PACKAGE p=package CLASS c=classDeclaration { {package_name= Package(p); imports_list= []; class_or_interface= c} }
-	| CLASS c=classDeclaration { {package_name= NoPackage; imports_list= []; class_or_interface= c} }
+	| p=packageOption i=importOption c=classDeclaration { {package_name= p; imports_list = i; class_or_interface= c} }
+
+packageOption:
+    | { NoPackage }
+    | PACKAGE p=package { Package(p) }
+    
+importOption:
+    | { [] }
+    | IMPORT i=imports { i }
 
 package:
-	| l=separated_list(DOT, IDENT) SEMICOLON {l}
+	| l=separated_nonempty_list(DOT, IDENT) SEMICOLON {l}
 
 imports:
 	| i=import IMPORT l=imports{ i::l }
@@ -53,7 +58,19 @@ import:
 	| i=IDENT DOT l=import {i::l}
 
 classDeclaration:
-	| s=IDENT {s}
+	| v=visibilityOption CLASS name=IDENT super=extendOption inters=implementOption OPEN_CURL test=IDENT CLOSE_CURL { {visibilityModifier= v; classIdentifier= name; super= super; interfaces= inters; classBody= test} }
+	
+visibilityOption:
+    | { Public } (*default case*)
+    | v=visibility { v }
+    
+extendOption:
+    | { "" }
+    | EXTENDS i=IDENT { i }
+    
+implementOption:
+    | { [] }
+    | IMPLEMENTS l=separated_nonempty_list(COMMA, IDENT) { l }
 
 fieldDeclaration:
     | fm=fieldModifier fd=fieldDeclaration 
@@ -69,5 +86,10 @@ fieldModifier:
     | FINAL     { FINAL }
     | TRANSIENT { TRANSIENT }
     | VOLATILE  { VOLATILE }
+    
+visibility:
+    | PUBLIC     { Public }
+    | PROTECTED  { Protected }
+    | PRIVATE    { Private }
 
 %%
