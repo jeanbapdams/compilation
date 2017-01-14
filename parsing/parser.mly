@@ -114,7 +114,32 @@ statement:
         | b=block   { b }
 
 expression:
-        | i=IDENT   { Expression i }
+    | p=primaryExpression   {PrimaryExpression p}
 
+primaryExpression:
+    | l=literal {Literal l}
+    | i=IDENT DOT CLASS {ClassLiteral i}
+    | THIS  {This}
+    | OPEN_PAR e=expression CLOSE_PAR   {ParExpr e}
+    | NEW i=IDENT OPEN_PAR a=separated_list(COMMA,expression) CLOSE_PAR  { ClassInstanceCreation(i,a) } (* manque possiblement des morceaux *)
+    | NEW i=IDENT d=dims    {ArrayInstanceCreation(i,d)} (* manque des formes *)
+    | fa=separated_nonempty_list(DOT, IDENT)    {FieldAccess fa}
+    | i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR {MethodInvocation(i,l)}
+    | i=IDENT OPEN_BRAC e=expression CLOSE_BRAC {ArrayAccess(i,e)}
+
+literal:
+    | i=INTEGER {Integer i}
+    | r=REAL    {Real r}
+    | TRUE      {Bool true}
+    | FALSE     {Bool false}
+    | qc=QUOTED_CHAR    {String qc}
+    | qs=QUOTED_STRING  {Char qs}
+(*    | n=NULL    {Null}  still needs to be added to lexer *)
+
+dims:
+    | OPEN_BRAC CLOSE_BRAC d=dims {Dim::d}
+    | OPEN_BRAC e=expression CLOSE_BRAC d=dims {(DimExpr e)::d}
+    | OPEN_BRAC CLOSE_BRAC  {[Dim]}
+    | OPEN_BRAC e=expression CLOSE_BRAC {[DimExpr e]}
 
 %%

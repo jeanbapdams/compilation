@@ -28,7 +28,35 @@ type program = {
 	imports_list: import list;
 	class_or_interface: class_or_interface}
 
-type expression = Expression of string
+type literal =
+    | Integer of string
+    | Real of string
+    | Bool of bool
+    | String of string
+    | Char of string
+
+
+(* pb de récursion : expression a besoin de primaryExpression qui a besoin de dims qui a besoin de expression ; d'ou le "and" *)
+type expression = 
+    | Expression of string
+    | PrimaryExpression of primaryExpression
+and
+dim =
+    | Dim
+    | DimExpr of expression
+
+and
+primaryExpression =
+    | Literal of literal
+    | ClassLiteral of string
+    | This
+    | ParExpr of expression
+    | ClassInstanceCreation of ident * expression list
+    | ArrayInstanceCreation of ident * dim list
+    | FieldAccess of ident list
+    | MethodInvocation of ident * expression list
+    | ArrayAccess of ident * expression
+
 
 type statement =
     | EmptyStatement
