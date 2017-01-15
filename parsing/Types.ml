@@ -45,54 +45,12 @@ interfaceType = string
 
 (* problème de compréhension de ce qu'est un classOrInterfaceType *)
 
-
-type fieldModifier = STATIC | FINAL | TRANSIENT | VOLATILE
-type variableInitializer = string (* more later maybe *)
-type variableDeclarator = ModTypeId of fieldModifier list*java_type*ident | ModTypeIdInit of fieldModifier list*java_type * ident * variableInitializer
-
-type visibility = Public | Protected | Private
-
-
-type normalClassDeclaration = {
-	visibilityModifier: visibility; (*public by default*)
-	classIdentifier: ident;
-	typeParameters: java_type list;
-	super: classType; (*normal_class;*) (* extends *)
-	interfaces: interfaceType list; (*interface list;*) 
-	classBody: classBodyDeclaration list }
-and
-classBodyDeclaration = 
-    | ClassMemberDeclaration of classMemberDeclaration
-    (*| InstanceInitializer of instanceInitializer
-    | StaticInitializer of staticInitializer
-    | ConstructorDeclaration of constructorDeclaration*)
-and
-classMemberDeclaration =
-    | FieldDeclaration of variableDeclarator
-    (*| MethodDeclaration of methodDeclaration
-    | ClassDeclaration of normal_class
-    | InterfaceDeclaration of interface*)
-    
-
-
-type classOrInterfaceDeclaration = normalClassDeclaration
-
-type import = ident list
-
-type package = Package of ident list | NoPackage
-
-type program = {
-	packageName: package;	
-	importsList: import list;
-	classOrInterface: classOrInterfaceDeclaration}
-
 type literal =
     | IntegerLiteral of string
     | RealLiteral of string
     | BoolLiteral of bool
     | StringLiteral of string
     | CharLiteral of string
-
 
 (* pb de récursion : expression a besoin de primaryExpression qui a besoin de dims qui a besoin de expression ; d'où le "and" *)
 type expression = 
@@ -204,6 +162,48 @@ assignmentOperator =
     | TRIPLECHEVRONLEFTEQUAL
     | DOUBLECHEVRONRIGHTEQUAL
     | TRIPLECHEVRONRIGHTEQUAL
+
+and fieldModifier = STATIC | FINAL | TRANSIENT | VOLATILE
+and variableInitializer = expression
+and variableDeclarator = 
+    | ModTypeId of fieldModifier list*java_type *ident 
+    | ModTypeIdInit of fieldModifier list*java_type * ident * variableInitializer
+
+type visibility = Public | Protected | Private
+
+
+type normalClassDeclaration = {
+	visibilityModifier: visibility; (*public by default*)
+	classIdentifier: ident;
+	typeParameters: java_type list;
+	super: classType; (*normal_class;*) (* extends *)
+	interfaces: interfaceType list; (*interface list;*) 
+	classBody: classBodyDeclaration list }
+and
+classBodyDeclaration = 
+    | ClassMemberDeclaration of classMemberDeclaration
+    (*| InstanceInitializer of instanceInitializer
+    | StaticInitializer of staticInitializer
+    | ConstructorDeclaration of constructorDeclaration*)
+and
+classMemberDeclaration =
+    | FieldDeclaration of variableDeclarator
+    (*| MethodDeclaration of methodDeclaration
+    | ClassDeclaration of normal_class
+    | InterfaceDeclaration of interface*)
+    
+
+
+type classOrInterfaceDeclaration = normalClassDeclaration
+
+type import = ident list
+
+type package = Package of ident list | NoPackage
+
+type program = {
+	packageName: package;	
+	importsList: import list;
+	classOrInterface: classOrInterfaceDeclaration}
 
 type statement =
     | EmptyStatement

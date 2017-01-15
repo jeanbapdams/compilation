@@ -93,7 +93,8 @@ fieldDeclaration:
         | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
         | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
     }
-    | i1=javaType i2=IDENT { ModTypeId([],i1,i2) }
+    | jt=javaType i=IDENT { ModTypeId([],jt,i) }
+    | jt=javaType i=IDENT EQUAL e=expression    { ModTypeIdInit([],jt,i,e) }
 
 fieldModifier:
     | STATIC    { STATIC }
@@ -126,9 +127,8 @@ statement:
     | FOR OPEN_PAR f=fieldDeclaration SEMICOLON e2=expression SEMICOLON e3=expression CLOSE_PAR s=statement   { For(f,e2,e3,s) }
     | BREAK SEMICOLON { Break }
     | CONTINUE SEMICOLON    { Continue }
+    | RETURN e=expression SEMICOLON { Return e }
     | RETURN SEMICOLON  { ReturnVoid }
-    | RETURN e=expression   { Return e }
-(* et plus encore plus tard *)
     | b=block   { b }
 
 
