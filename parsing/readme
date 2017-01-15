@@ -8,3 +8,4 @@ ouvrir utop
 statement nexttoken (Lexing.from_channel (open_in "testStatement.java"));;
 prog nexttoken (Lexing.from_channel (open_in "helloworld.java"));;
 
+Le résultat est peu lisible à cause de la manière dont les différents types d'expressions sont emboités dans la spécification java.
