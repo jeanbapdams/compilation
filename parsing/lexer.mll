@@ -105,8 +105,8 @@
 	| NOTANOPERATOR -> print_string "NOTANOPERATOR"
     
 let string_to_keyword s = match s with
-    |"abstract" ->      ABSTRACT     
-    |"continue" ->      CONTINUE
+	|"continue" ->      CONTINUE    
+	|"abstract" ->      ABSTRACT     
     |"assert" ->        ASSERT
     |"boolean" ->       BOOLEAN
     |"break" ->         BREAK
@@ -158,8 +158,8 @@ let string_to_keyword s = match s with
 	| _ ->      	    raise (invalid_arg "not a keyword")
 
 let string_to_operator s = match s with
-	| "=" ->	EQUAL
 	| ">" ->	GREATER
+	| "=" ->	EQUAL
 	| "<" ->	SMALLER
 	| "!" ->	EXCLAMATION
 	| "~" ->	TILDE
