@@ -1,20 +1,64 @@
 type ident = string
-type fieldType = string (* more later maybe *)
+
+(* définition des types Java *)
+
+type java_type = 
+	| PrimitiveType of primitiveType
+	| ReferenceType of referenceType
+
+and
+primitiveType =
+	| NumericType of numericType
+	| BOOL
+
+and
+numericType = 
+	| IntegralType of integralType
+	| FloatingPointType of floatingPointType
+
+and
+integralType = BYTE | SHORT | INT | LONG | CHAR
+
+and
+floatingPointType = FLOAT | DOUBLE
+
+
+and
+referenceType =
+	| ClassOrInterfaceType of classOrInterfaceType
+	| TypeVariable of typeVariable
+	| ArrayType of arrayType
+
+
+and
+arrayType = java_type (*TODO brac*)
+
+and
+typeVariable = string
+
+and
+classOrInterfaceType = ClassType of classType | InterfaceType of interfaceType
+and
+classType = string
+and
+interfaceType = string
+
+(* problème de compréhension de ce qu'est un classOrInterfaceType *)
+
 
 type fieldModifier = STATIC | FINAL | TRANSIENT | VOLATILE
 type variableInitializer = string (* more later maybe *)
-type variableDeclarator = ModTypeId of fieldModifier list*fieldType*ident | ModTypeIdInit of fieldModifier list*fieldType * ident * variableInitializer
+type variableDeclarator = ModTypeId of fieldModifier list*java_type*ident | ModTypeIdInit of fieldModifier list*java_type * ident * variableInitializer
 
 type visibility = Public | Protected | Private
 
-type typeParameter = string
 
-type normal_class = {
+type normalClassDeclaration = {
 	visibilityModifier: visibility; (*public by default*)
-	classIdentifier: string;
-	typeParameters: typeParameter list;
-	super: string; (*normal_class;*) (* extends *)
-	interfaces: string list; (*interface list;*) 
+	classIdentifier: ident;
+	typeParameters: java_type list;
+	super: classType; (*normal_class;*) (* extends *)
+	interfaces: interfaceType list; (*interface list;*) 
 	classBody: classBodyDeclaration list }
 and
 classBodyDeclaration = 
@@ -31,16 +75,16 @@ classMemberDeclaration =
     
 
 
-type class_or_interface = normal_class
+type classOrInterfaceDeclaration = normalClassDeclaration
 
-type import = string list
+type import = ident list
 
-type package = Package of string list | NoPackage
+type package = Package of ident list | NoPackage
 
 type program = {
-	package_name: package;	
-	imports_list: import list;
-	class_or_interface: class_or_interface}
+	packageName: package;	
+	importsList: import list;
+	classOrInterface: classOrInterfaceDeclaration}
 
 type literal =
     | Integer of string
@@ -85,42 +129,6 @@ type statement =
     | Break
     | Continue
     | Block of statement list
-
-
-
-(* définition des types Java *)
-
-type java_type = 
-	| PrimitiveType of primitiveType
-	| ReferenceType of referenceType
-
-type primitiveType =
-	| NumericType of numericType
-	| Bool of bool
-
-type numericType = 
-	| IntegalType of integralType
-	| FloatingPointType of floatingPointType
-
-type integralType = BYTE | SHORT | INT | LONG | CHAR
-
-type floatingPointType = FLOAT | DOUBLE
-
-
-
-type referenceType =
-	| ClassOrInterfaceType of classOrInterfaceType
-	| TypeVariable of typeVariable
-	| ArrayType of arrayType
-
-
-type arrayType = java_type * BRAC
-
-type typeVariable = string
-	
-type classOrInterfaceType = string list
-
-(* problème de compréhension de ce qu'est un classOrInterfaceType *)
 
 
 

@@ -36,7 +36,7 @@ prog:
     (*| EOF                   {{package_name=NoPackage; imports_list= []; class_or_interface= }}*)
 
 code:		
-	| p=packageOption i=importOption c=classDeclaration { {package_name= p; imports_list = i; class_or_interface= c} }
+	| p=packageOption i=importOption c=classDeclaration { {packageName= p; importsList = i; classOrInterface= c} }
 
 packageOption:
     | { NoPackage }
@@ -62,7 +62,7 @@ classDeclaration:
 
 typeParameterOption:
     | { [] }
-    | SMALLER l=separated_nonempty_list(COMMA, IDENT) GREATER { l }
+    | SMALLER l=separated_nonempty_list(COMMA, javaType) GREATER { l }
 	
 visibilityOption:
     | { Public } (*default case*)
@@ -93,7 +93,7 @@ fieldDeclaration:
         | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
         | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
     }
-    | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
+    | i1=javaType i2=IDENT { ModTypeId([],i1,i2) }
 
 fieldModifier:
     | STATIC    { STATIC }
@@ -155,5 +155,50 @@ dims:
     | OPEN_BRAC e=expression CLOSE_BRAC d=dims {(DimExpr e)::d}
     | OPEN_BRAC CLOSE_BRAC  {[Dim]}
     | OPEN_BRAC e=expression CLOSE_BRAC {[DimExpr e]}
+
+
+javaType:
+    | t=primitiveType { PrimitiveType(t) }
+    | t=referenceType { ReferenceType(t) }
+
+primitiveType:
+    | t=numericType { NumericType(t) }
+    | BOOLEAN { BOOL }
+    
+numericType:
+    | t=integralType { IntegralType(t) }
+    | t=floatingPointType { FloatingPointType(t) }
+    
+integralType:
+    | BYTE  { BYTE }
+    | SHORT { SHORT }
+    | INT   { INT }
+    | LONG  { LONG }
+    | CHAR  { CHAR }
+
+floatingPointType:
+    | DOUBLE    { DOUBLE }
+    | FLOAT     { FLOAT }
+
+referenceType:
+    | t=classOrInterfaceType    { ClassOrInterfaceType(t) }
+    | t=typeVariable            { TypeVariable(t) }
+    | t=arrayType               { ArrayType(t) }
+    
+arrayType:
+    | t=javaType OPEN_BRAC CLOSE_BRAC { t }
+
+typeVariable:
+    | t=IDENT   { t }
+    
+classOrInterfaceType:
+    | t=classType   { ClassType(t) }
+    | t=interfaceType   { InterfaceType(t) }
+    
+classType:
+    | t=IDENT   { t }
+
+interfaceType:
+    | t=IDENT   { t }
 
 %%
