@@ -85,3 +85,43 @@ type statement =
     | Break
     | Continue
     | Block of statement list
+
+
+
+(* définition des types Java *)
+
+type java_type = 
+	| PrimitiveType of primitiveType
+	| ReferenceType of referenceType
+
+type primitiveType =
+	| NumericType of numericType
+	| Bool of bool
+
+type numericType = 
+	| IntegalType of integralType
+	| FloatingPointType of floatingPointType
+
+type integralType = BYTE | SHORT | INT | LONG | CHAR
+
+type floatingPointType = FLOAT | DOUBLE
+
+
+
+type referenceType =
+	| ClassOrInterfaceType of classOrInterfaceType
+	| TypeVariable of typeVariable
+	| ArrayType of arrayType
+
+
+type arrayType = java_type * BRAC
+
+type typeVariable = string
+	
+type classOrInterfaceType = string list
+
+(* problème de compréhension de ce qu'est un classOrInterfaceType *)
+
+
+
+
