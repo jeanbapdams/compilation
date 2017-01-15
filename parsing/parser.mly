@@ -58,7 +58,11 @@ import:
 	| i=IDENT DOT l=import {i::l}
 
 classDeclaration:
-	| v=visibilityOption CLASS name=IDENT super=extendOption inters=implementOption OPEN_CURL test=IDENT CLOSE_CURL { {visibilityModifier= v; classIdentifier= name; super= super; interfaces= inters; classBody= test} }
+	 | v=visibilityOption CLASS name=IDENT typeParam=typeParameterOption super=extendOption inters=implementOption OPEN_CURL body=classBodyDeclarations CLOSE_CURL { {visibilityModifier= v; classIdentifier= name; typeParameters= typeParam; super= super; interfaces= inters; classBody= body} }
+
+typeParameterOption:
+    | { [] }
+    | SMALLER l=separated_nonempty_list(COMMA, IDENT) GREATER { l }
 	
 visibilityOption:
     | { Public } (*default case*)
@@ -71,6 +75,16 @@ extendOption:
 implementOption:
     | { [] }
     | IMPLEMENTS l=separated_nonempty_list(COMMA, IDENT) { l }
+
+classBodyDeclarations:
+    | { [] }
+    | l=classBodyDeclarations d=classBodyDeclaration { l@[d] }
+    
+classBodyDeclaration:
+    | cmd=classMemberDeclaration { ClassMemberDeclaration(cmd) }
+    
+classMemberDeclaration: 
+    | f=fieldDeclaration SEMICOLON { FieldDeclaration(f) }
 
 fieldDeclaration:
     | fm=fieldModifier fd=fieldDeclaration 

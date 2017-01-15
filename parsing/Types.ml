@@ -7,14 +7,28 @@ type variableDeclarator = ModTypeId of fieldModifier list*fieldType*ident | ModT
 
 type visibility = Public | Protected | Private
 
+type typeParameter = string
+
 type normal_class = {
 	visibilityModifier: visibility; (*public by default*)
 	classIdentifier: string;
-	(*typeParameters: typeParameter list; *)
+	typeParameters: typeParameter list;
 	super: string; (*normal_class;*) (* extends *)
 	interfaces: string list; (*interface list;*) 
-	classBody: string (*list*) }
-
+	classBody: classBodyDeclaration list }
+and
+classBodyDeclaration = 
+    | ClassMemberDeclaration of classMemberDeclaration
+    (*| InstanceInitializer of instanceInitializer
+    | StaticInitializer of staticInitializer
+    | ConstructorDeclaration of constructorDeclaration*)
+and
+classMemberDeclaration =
+    | FieldDeclaration of variableDeclarator
+    (*| MethodDeclaration of methodDeclaration
+    | ClassDeclaration of normal_class
+    | InterfaceDeclaration of interface*)
+    
 
 
 type class_or_interface = normal_class
