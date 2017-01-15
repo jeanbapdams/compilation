@@ -112,20 +112,25 @@ block:
 blockStatements:
     | s=statement b=blockStatements  {match b with Block l -> Block (s::l) }
     | s=statement   { Block [s] } 
+
 statement:
-        | SEMICOLON { EmptyStatement }
-        | e=expression SEMICOLON    {Expression e}
-        | IF OPEN_PAR e=expression CLOSE_PAR s=statement    { IfThen(e,s) }
-        | IF OPEN_PAR e=expression CLOSE_PAR s1=statement ELSE s2=statement    { IfThenElse(e,s1,s2) }
-        | ASSERT e=expression SEMICOLON { Assert e }
+    | SEMICOLON { EmptyStatement }
+    | f=fieldDeclaration    { LocalVariableDeclaration f }
+    | e=expression SEMICOLON    {Expression e}
+    | IF OPEN_PAR e=expression CLOSE_PAR s=statement    { IfThen(e,s) }
+    | IF OPEN_PAR e=expression CLOSE_PAR s1=statement ELSE s2=statement    { IfThenElse(e,s1,s2) }
+    | ASSERT e=expression SEMICOLON { Assert e }
 (*        | SWITCH OPEN_PAR e=expression CLOSE_PAR s=switchblock  { Siwtch(e,s) } plus tard*)
-        | WHILE OPEN_PAR e=expression CLOSE_PAR s=statement { While(e,s) }
-        | DO s=statement WHILE OPEN_PAR e=expression CLOSE_PAR SEMICOLON  {Do(s,e) }
-(*      | FOR ... later *)
-        | BREAK SEMICOLON { Break }
-        | CONTINUE SEMICOLON { Continue }
+    | WHILE OPEN_PAR e=expression CLOSE_PAR s=statement { While(e,s) }
+    | DO s=statement WHILE OPEN_PAR e=expression CLOSE_PAR SEMICOLON  {Do(s,e) }
+    | FOR OPEN_PAR f=fieldDeclaration SEMICOLON e2=expression SEMICOLON e3=expression CLOSE_PAR s=statement   { For(f,e2,e3,s) }
+    | BREAK SEMICOLON { Break }
+    | CONTINUE SEMICOLON    { Continue }
+    | RETURN SEMICOLON  { ReturnVoid }
+    | RETURN e=expression   { Return e }
 (* et plus encore plus tard *)
-        | b=block   { b }
+    | b=block   { b }
+
 
 expression:
     | a=assignmentExpression    { AssignmentExpression a }

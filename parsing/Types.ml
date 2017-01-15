@@ -207,6 +207,7 @@ assignmentOperator =
 
 type statement =
     | EmptyStatement
+    | LocalVariableDeclaration of variableDeclarator
     | Expression of expression
     | IfThen of expression * statement
     | IfThenElse of expression * statement * statement
@@ -214,9 +215,11 @@ type statement =
     | Switch of expression * statement list
     | While of expression * statement
     | Do of statement * expression
-(*  | FOR of ... *)
+    | For of variableDeclarator * expression * expression * statement
     | Break
     | Continue
+    | ReturnVoid
+    | Return of expression
     | Block of statement list
 
 
