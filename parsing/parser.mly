@@ -28,6 +28,8 @@
 (*%type <program> prog*)
 
 %start <statement> statement
+%start <variableDeclarator> fieldDeclaration
+%start <java_type> javaType
 
 %%
 

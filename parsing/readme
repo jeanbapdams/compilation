@@ -1,0 +1,10 @@
+pour utiliser le lexer/parser :
+compiler avec ./compile.sh
+
+ouvrir utop
+#use "parser.ml"
+#use "lexer.ml"
+
+statement nexttoken (Lexing.from_channel (open_in "testStatement.java"));;
+prog nexttoken (Lexing.from_channel (open_in "helloworld.java"));;
+
