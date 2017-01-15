@@ -114,7 +114,7 @@ statement:
         | b=block   { b }
 
 expression:
-    | p=primaryExpression   {PrimaryExpression p}
+    | a=assignmentExpression    { AssignmentExpression a }
 
 primaryExpression:
     | l=literal {Literal l}
@@ -123,17 +123,17 @@ primaryExpression:
     | OPEN_PAR e=expression CLOSE_PAR   {ParExpr e}
     | NEW i=IDENT OPEN_PAR a=separated_list(COMMA,expression) CLOSE_PAR  { ClassInstanceCreation(i,a) } (* manque possiblement des morceaux *)
     | NEW i=IDENT d=dims    {ArrayInstanceCreation(i,d)} (* manque des formes *)
-    | fa=separated_nonempty_list(DOT, IDENT)    {FieldAccess fa}
-    | i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR {MethodInvocation(i,l)}
-    | i=IDENT OPEN_BRAC e=expression CLOSE_BRAC {ArrayAccess(i,e)}
+    | fa=fieldAccess {FieldAccess fa}
+    | mi=methodInvocation   { MethodInvocation mi }
+    | ar=arrayAccess    { ArrayAccess ar }
 
 literal:
-    | i=INTEGER {Integer i}
-    | r=REAL    {Real r}
-    | TRUE      {Bool true}
-    | FALSE     {Bool false}
-    | qc=QUOTED_CHAR    {String qc}
-    | qs=QUOTED_STRING  {Char qs}
+    | i=INTEGER {IntegerLiteral i}
+    | r=REAL    {RealLiteral r}
+    | TRUE      {BoolLiteral true}
+    | FALSE     {BoolLiteral false}
+    | qc=QUOTED_CHAR    {StringLiteral qc}
+    | qs=QUOTED_STRING  {CharLiteral qs}
 (*    | n=NULL    {Null}  still needs to be added to lexer *)
 
 dims:
@@ -141,5 +141,96 @@ dims:
     | OPEN_BRAC e=expression CLOSE_BRAC d=dims {(DimExpr e)::d}
     | OPEN_BRAC CLOSE_BRAC  {[Dim]}
     | OPEN_BRAC e=expression CLOSE_BRAC {[DimExpr e]}
+
+fieldAccess:
+    | p=primaryExpression DOT i=IDENT   { ExprAcc(p,i) }
+    | SUPER DOT i=IDENT {SuperAcc i}
+    | i1=IDENT DOT SUPER DOT i2=IDENT   { ClassSuperAcc(i1,i2) }
+
+arrayAccess:
+    | e1=expression OPEN_BRAC e2=expression CLOSE_BRAC {(e1,e2)}
+
+methodInvocation:
+    | i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { Invoc(i,l) }
+    | p=primaryExpression DOT i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { ExprInvoc(p,i,l) }
+    | SUPER DOT i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { SuperInvoc(i,l) }
+    | i1=IDENT DOT SUPER DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { ClassSuperInvoc(i1,i2,l) }
+    | i1=IDENT DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { TypeInvoc(i1,i2,l) }
+
+postfixExpression:
+    | i=IDENT   { ExpressionName i }
+    | p=primaryExpression { PostfixPrimaryExpression p }
+    | p=postfixExpression INC { PostIncExpr p }
+    | p=postfixExpression DEC { PostDecExpr p }
+
+unaryExpression:
+    | INC u=unaryExpression { PreIncExpr u }
+    | DEC u=unaryExpression { PreDecExpr u }
+    | PLUS u=unaryExpression    { PlusExpr u }
+    | MINUS u=unaryExpression   { MinusExpr u }
+    | TILDE u=unaryExpression   { TildeExpr u }
+    | EXCLAMATION u=unaryExpression { ExclamationExpr u }
+    | pf=postfixExpression  { UnaryPostfixExpression pf }
+
+multiplicativeExpression:
+    | u=unaryExpression {MultiplicativeUnaryExpression u}
+    | m=multiplicativeExpression MUL u=unaryExpression  { Mul(m,u) }
+    | m=multiplicativeExpression DIV u=unaryExpression  { Div(m,u) }
+    | m=multiplicativeExpression MOD u=unaryExpression  { Mod(m,u) }
+
+additiveExpression:
+    | m=multiplicativeExpression    { AdditiveMultiplicativeExpression m }
+    | a=additiveExpression PLUS m=multiplicativeExpression  { Plus(a,m) }
+    | a=additiveExpression MINUS m=multiplicativeExpression  { Minus(a,m) }
+
+shiftExpression:
+    | a=additiveExpression  { ShiftAdditiveExpression a }
+    | s=shiftExpression DOUBLECHEVRONLEFT a=additiveExpression  { ShiftTwoLeft(s,a) }
+    | s=shiftExpression DOUBLECHEVRONRIGHT a=additiveExpression  { ShiftTwoRight(s,a) }
+    | s=shiftExpression TRIPLECHEVRONLEFT a=additiveExpression  { ShiftThreeLeft(s,a) }
+    | s=shiftExpression TRIPLECHEVRONRIGHT a=additiveExpression  { ShiftThreeRight(s,a) }
+
+relationalExpression:
+    | s=shiftExpression { RelationalShiftExpression s }
+    | r=relationalExpression SMALLER s=shiftExpression  { Smaller(r,s) }
+    | r=relationalExpression GREATER s=shiftExpression  { Greater(r,s) }
+    | r=relationalExpression SMALLEROREQUAL s=shiftExpression   { SmallerOrEqual(r,s) }
+    | r=relationalExpression GREATEROREQUAL s=shiftExpression   { GreaterOrEqual(r,s) }
+    | r=relationalExpression INSTANCEOF i=IDENT { InstanceOf(r,i) }
+
+equalityExpression:
+    | r=relationalExpression    { EqualityRelationalExpression r }
+    | e=equalityExpression DOUBLEEQUAL r=relationalExpression    { Equal(e,r) }
+    | e=equalityExpression DIFFERENT r=relationalExpression { Equal(e,r) }
+
+
+(* plusieurs morceaux séparés dans la spec' sont ici entassé pour gagner du temps *)
+logicalExpression:
+    | e=equalityExpression  { LogicalEqualityExpression e }
+    | l1=logicalExpression AND l2=logicalExpression { And(l1,l2) }
+    | l1=logicalExpression POWER l2=logicalExpression { ExcOr(l1,l2) }
+    | l1=logicalExpression OR l2=logicalExpression { IncOr(l1,l2) }
+    | l1=logicalExpression DOUBLEAND l2=logicalExpression { DoubleAnd(l1,l2) }
+    | l1=logicalExpression DOUBLEOR l2=logicalExpression { DoubleOr(l1,l2) }
+    | l=logicalExpression QUESTION e1=expression COLON e2=expression    { Conditional(l,e1,e2) }
+
+assignmentExpression:
+    | l=logicalExpression   { AssignmentLogicalExpression l }
+    | i=assignmentLeftHand EQUAL e=assignmentExpression    { Assignment(i,EQUAL,e) }
+    | i=assignmentLeftHand MULEQUAL e=assignmentExpression    { Assignment(i,MULEQUAL,e) }
+    | i=assignmentLeftHand DIVEQUAL e=assignmentExpression    { Assignment(i,DIVEQUAL,e) }
+    | i=assignmentLeftHand MODEQUAL e=assignmentExpression    { Assignment(i,MODEQUAL,e) }
+    | i=assignmentLeftHand PLUSEQUAL e=assignmentExpression    { Assignment(i,PLUSEQUAL,e) }
+    | i=assignmentLeftHand MINUSEQUAL e=assignmentExpression    { Assignment(i,MINUSEQUAL,e) }
+    | i=assignmentLeftHand DOUBLECHEVRONLEFTEQUAL e=assignmentExpression    { Assignment(i,DOUBLECHEVRONLEFTEQUAL,e) }
+    | i=assignmentLeftHand TRIPLECHEVRONLEFTEQUAL e=assignmentExpression    { Assignment(i,TRIPLECHEVRONLEFTEQUAL,e) }
+    | i=assignmentLeftHand DOUBLECHEVRONRIGHTEQUAL e=assignmentExpression    { Assignment(i,DOUBLECHEVRONRIGHTEQUAL,e) }
+    | i=assignmentLeftHand TRIPLECHEVRONRIGHTEQUAL e=assignmentExpression    { Assignment(i,TRIPLECHEVRONRIGHTEQUAL,e) }
+
+assignmentLeftHand:
+    | i=IDENT   { LeftHandExpressionName i }
+    | fa=fieldAccess    { LeftHandFieldAccess fa }
+    | ar=arrayAccess    { LeftHandArrayAccess ar }
+
 
 %%
