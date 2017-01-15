@@ -1,6 +1,5 @@
 %{
 	open Types
-	(*type package = string list*)
 %}
 
 %token EOF
@@ -25,7 +24,7 @@
 %token FALSE
 
 %start <program> prog
-(*%type <program> prog*)
+
 
 %start <statement> statement
 
@@ -84,7 +83,57 @@ classBodyDeclaration:
     | cmd=classMemberDeclaration { ClassMemberDeclaration(cmd) }
     
 classMemberDeclaration: 
-    | f=fieldDeclaration SEMICOLON { FieldDeclaration(f) }
+    | f=fieldDeclaration SEMICOLON 	{ FieldDeclaration(f) }
+	| m=methodDeclaration			{ MethodDeclaration(m) }
+    
+methodDeclaration:
+	| mm=methodModifiersOption (*tp=typeParametersOption*) rt=resultType md=methodDeclarator mb=block { {methodModifiers= mm; (*typeParameters= tp;*) resultType= rt; methodDeclarator= md; methodBody= mb} }
+
+methodModifiersOption:
+	| { [] }
+	| mm=methodModifiers { mm }
+
+methodModifiers:
+	| mm=methodModifier { [mm] }
+	| l=methodModifiers mm=methodModifier { l@[mm] }
+
+methodModifier:
+	| PUBLIC 	{ PUBLIC }
+	| PROTECTED	{ PROTECTED }
+	| PRIVATE	{ PRIVATE }
+	| ABSTRACT 	{ ABSTRACT }
+	| STATIC 	{ STATIC }
+	| FINAL 	{ FINAL }
+	| SYNCHRONIZED { SYNCHRONIZED }
+	| NATIVE 	{ NATIVE }
+	| STRICTFP	{ STRICTFP }
+
+typeParametersOption:
+	| { [] }
+	| j=methodTypeParameters  { j }
+
+methodTypeParameters:
+	| m=methodTypeParameter { [m] }
+	| l=methodTypeParameters m=methodTypeParameter { l@[m] }
+
+methodTypeParameter:
+	| j=javaType { j }
+
+resultType:
+	| j=javaType 	{ TYPE(j) }
+    | VOID 			{ VOID } 
+
+
+methodDeclarator:
+	| i=IDENT OPEN_PAR l=parameterList CLOSE_PAR { i, l }
+
+parameterList:
+	| { [] }
+	| l=separated_nonempty_list(COMMA, parameter) { l }
+parameter:
+	| t=javaType i=IDENT { t, i }
+
+
 
 fieldDeclaration:
     | fm=fieldModifier fd=fieldDeclaration 
@@ -100,7 +149,7 @@ fieldModifier:
     | FINAL     { FINAL }
     | TRANSIENT { TRANSIENT }
     | VOLATILE  { VOLATILE }
-    
+
 visibility:
     | PUBLIC     { Public }
     | PROTECTED  { Protected }
