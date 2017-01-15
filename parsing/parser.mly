@@ -36,7 +36,7 @@ prog:
     (*| EOF                   {{package_name=NoPackage; imports_list= []; class_or_interface= }}*)
 
 code:		
-	| p=packageOption i=importOption c=classDeclaration { {package_name= p; imports_list = i; class_or_interface= c} }
+	| p=packageOption i=importOption c=classDeclaration { {packageName= p; importsList = i; classOrInterface= c} }
 
 packageOption:
     | { NoPackage }
@@ -58,7 +58,11 @@ import:
 	| i=IDENT DOT l=import {i::l}
 
 classDeclaration:
-	| v=visibilityOption CLASS name=IDENT super=extendOption inters=implementOption OPEN_CURL test=IDENT CLOSE_CURL { {visibilityModifier= v; classIdentifier= name; super= super; interfaces= inters; classBody= test} }
+	 | v=visibilityOption CLASS name=IDENT typeParam=typeParameterOption super=extendOption inters=implementOption OPEN_CURL body=classBodyDeclarations CLOSE_CURL { {visibilityModifier= v; classIdentifier= name; typeParameters= typeParam; super= super; interfaces= inters; classBody= body} }
+
+typeParameterOption:
+    | { [] }
+    | SMALLER l=separated_nonempty_list(COMMA, javaType) GREATER { l }
 	
 visibilityOption:
     | { Public } (*default case*)
@@ -72,6 +76,16 @@ implementOption:
     | { [] }
     | IMPLEMENTS l=separated_nonempty_list(COMMA, IDENT) { l }
 
+classBodyDeclarations:
+    | { [] }
+    | l=classBodyDeclarations d=classBodyDeclaration { l@[d] }
+    
+classBodyDeclaration:
+    | cmd=classMemberDeclaration { ClassMemberDeclaration(cmd) }
+    
+classMemberDeclaration: 
+    | f=fieldDeclaration SEMICOLON { FieldDeclaration(f) }
+
 fieldDeclaration:
     | fm=fieldModifier fd=fieldDeclaration 
     {
@@ -79,7 +93,7 @@ fieldDeclaration:
         | ModTypeId (l,f,i) -> ModTypeId(fm::l,f,i)
         | ModTypeIdInit (l,f,i,init) -> ModTypeIdInit(fm::l,f,i,init)
     }
-    | i1=IDENT i2=IDENT { ModTypeId([],i1,i2) }
+    | i1=javaType i2=IDENT { ModTypeId([],i1,i2) }
 
 fieldModifier:
     | STATIC    { STATIC }
@@ -118,11 +132,11 @@ expression:
 
 primaryExpression:
     | l=literal {Literal l}
-    | i=IDENT DOT CLASS {ClassLiteral i}
+    | i=javaType DOT CLASS {ClassLiteral i}
     | THIS  {This}
     | OPEN_PAR e=expression CLOSE_PAR   {ParExpr e}
-    | NEW i=IDENT OPEN_PAR a=separated_list(COMMA,expression) CLOSE_PAR  { ClassInstanceCreation(i,a) } (* manque possiblement des morceaux *)
-    | NEW i=IDENT d=dims    {ArrayInstanceCreation(i,d)} (* manque des formes *)
+    | NEW i=javaType OPEN_PAR a=separated_list(COMMA,expression) CLOSE_PAR  { ClassInstanceCreation(i,a) } (* manque possiblement des morceaux *)
+    | NEW i=javaType d=dims    {ArrayInstanceCreation(i,d)} (* manque des formes *)
     | fa=fieldAccess {FieldAccess fa}
     | mi=methodInvocation   { MethodInvocation mi }
     | ar=arrayAccess    { ArrayAccess ar }
@@ -145,7 +159,7 @@ dims:
 fieldAccess:
     | p=primaryExpression DOT i=IDENT   { ExprAcc(p,i) }
     | SUPER DOT i=IDENT {SuperAcc i}
-    | i1=IDENT DOT SUPER DOT i2=IDENT   { ClassSuperAcc(i1,i2) }
+    | i1=javaType DOT SUPER DOT i2=IDENT   { ClassSuperAcc(i1,i2) }
 
 arrayAccess:
     | e1=expression OPEN_BRAC e2=expression CLOSE_BRAC {(e1,e2)}
@@ -154,8 +168,8 @@ methodInvocation:
     | i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { Invoc(i,l) }
     | p=primaryExpression DOT i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { ExprInvoc(p,i,l) }
     | SUPER DOT i=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { SuperInvoc(i,l) }
-    | i1=IDENT DOT SUPER DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { ClassSuperInvoc(i1,i2,l) }
-    | i1=IDENT DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { TypeInvoc(i1,i2,l) }
+    | i1=javaType DOT SUPER DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { ClassSuperInvoc(i1,i2,l) }
+    | i1=javaType DOT i2=IDENT OPEN_PAR l=separated_list(COMMA, expression) CLOSE_PAR { TypeInvoc(i1,i2,l) }
 
 postfixExpression:
     | i=IDENT   { ExpressionName i }
@@ -196,7 +210,7 @@ relationalExpression:
     | r=relationalExpression GREATER s=shiftExpression  { Greater(r,s) }
     | r=relationalExpression SMALLEROREQUAL s=shiftExpression   { SmallerOrEqual(r,s) }
     | r=relationalExpression GREATEROREQUAL s=shiftExpression   { GreaterOrEqual(r,s) }
-    | r=relationalExpression INSTANCEOF i=IDENT { InstanceOf(r,i) }
+    | r=relationalExpression INSTANCEOF i=javaType { InstanceOf(r,i) }
 
 equalityExpression:
     | r=relationalExpression    { EqualityRelationalExpression r }
@@ -211,7 +225,6 @@ logicalExpression:
     | l1=logicalExpression POWER l2=logicalExpression { ExcOr(l1,l2) }
     | l1=logicalExpression OR l2=logicalExpression { IncOr(l1,l2) }
     | l1=logicalExpression DOUBLEAND l2=logicalExpression { DoubleAnd(l1,l2) }
-    | l1=logicalExpression DOUBLEOR l2=logicalExpression { DoubleOr(l1,l2) }
     | l=logicalExpression QUESTION e1=expression COLON e2=expression    { Conditional(l,e1,e2) }
 
 assignmentExpression:
@@ -232,5 +245,49 @@ assignmentLeftHand:
     | fa=fieldAccess    { LeftHandFieldAccess fa }
     | ar=arrayAccess    { LeftHandArrayAccess ar }
 
+
+javaType:
+    | t=primitiveType { PrimitiveType(t) }
+    | t=referenceType { ReferenceType(t) }
+
+primitiveType:
+    | t=numericType { NumericType(t) }
+    | BOOLEAN { BOOL }
+    
+numericType:
+    | t=integralType { IntegralType(t) }
+    | t=floatingPointType { FloatingPointType(t) }
+    
+integralType:
+    | BYTE  { BYTE }
+    | SHORT { SHORT }
+    | INT   { INT }
+    | LONG  { LONG }
+    | CHAR  { CHAR }
+
+floatingPointType:
+    | DOUBLE    { DOUBLE }
+    | FLOAT     { FLOAT }
+
+referenceType:
+    | t=classOrInterfaceType    { ClassOrInterfaceType(t) }
+    | t=typeVariable            { TypeVariable(t) }
+    | t=arrayType               { ArrayType(t) }
+    
+arrayType:
+    | t=javaType OPEN_BRAC CLOSE_BRAC { t }
+
+typeVariable:
+    | t=IDENT   { t }
+    
+classOrInterfaceType:
+    | t=classType   { ClassType(t) }
+    | t=interfaceType   { InterfaceType(t) }
+    
+classType:
+    | t=IDENT   { t }
+
+interfaceType:
+    | t=IDENT   { t }
 
 %%

@@ -1,32 +1,90 @@
 type ident = string
-type fieldType = string (* more later maybe *)
+
+(* définition des types Java *)
+
+type java_type = 
+	| PrimitiveType of primitiveType
+	| ReferenceType of referenceType
+
+and
+primitiveType =
+	| NumericType of numericType
+	| BOOL
+
+and
+numericType = 
+	| IntegralType of integralType
+	| FloatingPointType of floatingPointType
+
+and
+integralType = BYTE | SHORT | INT | LONG | CHAR
+
+and
+floatingPointType = FLOAT | DOUBLE
+
+
+and
+referenceType =
+	| ClassOrInterfaceType of classOrInterfaceType
+	| TypeVariable of typeVariable
+	| ArrayType of arrayType
+
+
+and
+arrayType = java_type (*TODO brac*)
+
+and
+typeVariable = string
+
+and
+classOrInterfaceType = ClassType of classType | InterfaceType of interfaceType
+and
+classType = string
+and
+interfaceType = string
+
+(* problème de compréhension de ce qu'est un classOrInterfaceType *)
+
 
 type fieldModifier = STATIC | FINAL | TRANSIENT | VOLATILE
 type variableInitializer = string (* more later maybe *)
-type variableDeclarator = ModTypeId of fieldModifier list*fieldType*ident | ModTypeIdInit of fieldModifier list*fieldType * ident * variableInitializer
+type variableDeclarator = ModTypeId of fieldModifier list*java_type*ident | ModTypeIdInit of fieldModifier list*java_type * ident * variableInitializer
 
 type visibility = Public | Protected | Private
 
-type normal_class = {
+
+type normalClassDeclaration = {
 	visibilityModifier: visibility; (*public by default*)
-	classIdentifier: string;
-	(*typeParameters: typeParameter list; *)
-	super: string; (*normal_class;*) (* extends *)
-	interfaces: string list; (*interface list;*) 
-	classBody: string (*list*) }
+	classIdentifier: ident;
+	typeParameters: java_type list;
+	super: classType; (*normal_class;*) (* extends *)
+	interfaces: interfaceType list; (*interface list;*) 
+	classBody: classBodyDeclaration list }
+and
+classBodyDeclaration = 
+    | ClassMemberDeclaration of classMemberDeclaration
+    (*| InstanceInitializer of instanceInitializer
+    | StaticInitializer of staticInitializer
+    | ConstructorDeclaration of constructorDeclaration*)
+and
+classMemberDeclaration =
+    | FieldDeclaration of variableDeclarator
+    (*| MethodDeclaration of methodDeclaration
+    | ClassDeclaration of normal_class
+    | InterfaceDeclaration of interface*)
+    
 
 
+type classOrInterfaceDeclaration = normalClassDeclaration
 
-type class_or_interface = normal_class
+type import = ident list
 
-type import = string list
-
-type package = Package of string list | NoPackage
+type package = Package of ident list | NoPackage
 
 type program = {
-	package_name: package;	
-	imports_list: import list;
-	class_or_interface: class_or_interface}
+	packageName: package;	
+	importsList: import list;
+	classOrInterface: classOrInterfaceDeclaration}
 
 type literal =
     | IntegerLiteral of string
@@ -42,11 +100,11 @@ type expression =
 and
 primaryExpression =
     | Literal of literal
-    | ClassLiteral of string
+    | ClassLiteral of java_type
     | This
     | ParExpr of expression
-    | ClassInstanceCreation of ident * expression list
-    | ArrayInstanceCreation of ident * dim list
+    | ClassInstanceCreation of java_type * expression list
+    | ArrayInstanceCreation of java_type * dim list
     | FieldAccess of fieldAccess
     | MethodInvocation of methodInvocation
     | ArrayAccess of arrayAccess
@@ -54,7 +112,7 @@ and
 fieldAccess =
     | ExprAcc of primaryExpression * ident
     | SuperAcc of ident
-    | ClassSuperAcc of ident * ident
+    | ClassSuperAcc of java_type * ident
 and
 arrayAccess = expression * expression
 and
@@ -62,8 +120,8 @@ methodInvocation =
     | Invoc of ident * expression list
     | ExprInvoc of primaryExpression * ident * expression list
     | SuperInvoc of ident * expression list
-    | ClassSuperInvoc of ident * ident * expression list
-    | TypeInvoc of ident * ident * expression list
+    | ClassSuperInvoc of java_type * ident * expression list
+    | TypeInvoc of java_type * ident * expression list
 and
 dim =
     | Dim
@@ -110,7 +168,7 @@ relationalExpression =
     | Greater of relationalExpression * shiftExpression
     | SmallerOrEqual of relationalExpression * shiftExpression
     | GreaterOrEqual of relationalExpression * shiftExpression
-    | InstanceOf of relationalExpression * ident
+    | InstanceOf of relationalExpression * java_type
 and
 equalityExpression =
     | EqualityRelationalExpression of relationalExpression
@@ -132,7 +190,7 @@ assignmentExpression =
 and
 assignmentLeftHand = 
     | LeftHandExpressionName of expressionName
-    | LeftHandFieldAccess of LeftHandfieldAccess
+    | LeftHandFieldAccess of fieldAccess
     | LeftHandArrayAccess of arrayAccess
 and
 assignmentOperator =
@@ -160,3 +218,7 @@ type statement =
     | Break
     | Continue
     | Block of statement list
+
+
+
+
