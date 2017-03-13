@@ -205,6 +205,10 @@ let string_of_assign_op = function
   | Ass_xor -> "^="
   | Ass_or  -> "|="
 
+let string_of_postfix_op = function
+  | Incr -> "++"
+  | Decr -> "--"
+
 let string_of_infix_op = function
   | Op_cor   -> "||"
   | Op_cand  -> "&&"
