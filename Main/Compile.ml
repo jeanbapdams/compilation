@@ -13,7 +13,10 @@ let execute lexbuf verbose =
             | None -> print_string "No package\n";
             | Some l -> AST.print_package l;
         );
-        Typing.process_type_list type_list;
+        (* the same tree, but all the expressions are typed *)
+        let tast = Typing.process_type_list type_list in ();
+        print_string "\n\n+++++++++++++++++++++++++++++++++\nsecond pass, should display the types of the expressions(and someday it will)\n\n";
+        let tast = Typing.process_type_list tast in ();
 
    (*     let tast = Typing.typing ast in (); *)
 
