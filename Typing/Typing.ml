@@ -10,7 +10,12 @@ let rec process_t t =
 
 (*the big stuff*)
 let rec process_expression exp = 
-    match exp with {AST.edesc} ->
+    match exp with {AST.edesc; AST.etype} ->
+        (
+        match etype with
+        | Some etype -> print_string ("Expression of type: "^(stringOf etype)^"\n");
+        | None -> print_string "Etype not defined yet\n";
+        );
         match edesc with
         | New(Some name,id,params) -> print_string ("new "^name^": "^(AST.string_of_expression_desc edesc));
         | NewArray(_,_,_) -> print_string "newarray todo\n";
