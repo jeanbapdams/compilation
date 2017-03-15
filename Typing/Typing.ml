@@ -1,6 +1,8 @@
 open Parser
 open Type
 
+exception NonBooleanCondition;;
+exception BadTypeDefaultValue;;
 
 (* How does this make any sense ? Typing a type ? Was used for verbosity purpose, will be removed before the typer is over. *)
 let rec process_t t =
@@ -48,16 +50,44 @@ let rec process_expression exp =
 
 let rec process_statement statement =
     match statement with
-    | AST.Block statements -> print_string "start block\n"; let r = AST.Block(List.map process_statement statements) in print_string "end block\n"; r;
+    | AST.Block statements ->
+            print_string "start block\n";
+            let r = AST.Block(List.map process_statement statements) in
+            print_string "end block\n";
+            r;
     | Nop -> print_string "nope\n"; statement;
-    | While(exp,statement) -> print_string "while\n"; let r = AST.While(process_expression exp, process_statement statement) in print_string "end while\n"; r;
-    | For(_,_,_,_) -> print_string "for todo\n"; print_string "end for\n"; statement;
-    | If(cond,iftrue,iffalse) -> print_string "if\n"; let r = AST.If(process_expression cond, process_statement iftrue, (match iffalse with None -> None | Some statement -> Some (process_statement statement))) in print_string "end if\n"; r;
-    | Return exp -> (match exp with None -> print_string "return void\n"; AST.Return None | Some exp -> print_string "return\n"; let r = AST.Return( Some (process_expression exp)) in print_string "end return\n"; r);
-    | AST.Expr expr -> Expr (process_expression expr);
+    | While(exp,statement) -> 
+            print_string "while\n";
+            let r = AST.While(process_expression exp, process_statement statement) in
+            (
+                match r with AST.While({edesc;etype},_) ->
+                    if etype=Some (Primitive Boolean)
+                    then print_string "condition is boolean OK\n"
+                    else (print_string "condtion is not boolean NOT OK\n"; raise NonBooleanCondition)
+                    print_string "end while\n";
+            ); r;
+    | For(_,_,_,_) ->
+            print_string "for todo\n";
+            print_string "end for\n";
+            statement;
+    | If(cond,iftrue,iffalse) -> 
+            print_string "if\n";
+            let r = AST.If(process_expression cond, process_statement iftrue, (match iffalse with None -> None | Some statement -> Some (process_statement statement))) in
+            (
+                match r with AST.While({edesc;etype},_) ->
+                    if etype=Some (Primitive Boolean)
+                    then print_string "condition is boolean OK\n"
+                    else (print_string "condtion is not boolean NOT OK\n"; raise NonBooleanCondition)
+                    print_string "end if\n";
+            ); r;
+    | Return exp ->
+            (
+                match exp with 
+                | None -> print_string "return void\n"; AST.Return None;
+                | Some exp -> print_string "return\n"; let r = AST.Return( Some (process_expression exp)) in print_string "end return\n"; r;
+            );
+    | AST.Expr expr -> Expr(process_expression expr);
     | _ -> print_string "statement todo\n"; statement;
-
-
 ;;
 
 let rec process_astattributes astattributes =
@@ -69,11 +99,21 @@ let rec process_astattributes astattributes =
         process_t atype;
         let def=
         (
-        match adefault with
-        | None -> print_string "No default\n"; None;
-        | Some exp -> Some (process_expression exp);
+            match adefault with
+            | None -> print_string "No default\n"; None;
+            | Some exp -> Some (process_expression exp);
         ) in
-        ( match def with Some {AST.edesc; AST.etype} -> match etype with None -> print_string "Default not typed\n" | Some t -> print_string ("default typed as "^(stringOf t)^"\n"));
+        ( 
+            match def with Some {AST.edesc; AST.etype} ->
+                match etype with 
+                | None -> 
+                        print_string "Default not typed\n" ;
+                | Some t -> 
+                        print_string ("default typed as "^(stringOf t)^"\n");
+                        if atype=t 
+                        then print_string "init value type correct\n"
+                        else (print_string ("wrong init value type ! "^(stringOf atype)^" vs "^(stringOf t)^"\n"); raise BadTypeDefaultValue;)
+        );
         {AST.amodifiers;aname;atype;adefault=def}::(process_astattributes l);;
         
 let rec process_arguments arguments =
