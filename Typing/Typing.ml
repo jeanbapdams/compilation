@@ -23,7 +23,17 @@ let rec process_expression exp =
             | Call(o,id,args) -> print_string ("call "^id^" todo\n"); exp;
             | Attr(expr,id) -> process_expression expr; print_string ("."^id^"\n"); exp;
             | If (condition, iftrue, iffalse) -> print_string ("if\n"); {edesc=AST.If((process_expression condition), (process_expression iftrue), (process_expression iffalse));etype=None};
-            | Val value -> print_string ("value: "^(AST.string_of_value value)^"\n"); exp;
+            | Val value -> print_string ("value: "^(AST.string_of_value value)^"\n");
+            (
+                print_string "++defining value type\n";
+                match value with
+                | String _ -> print_string "String todo\n"; exp;
+                | Int _ -> {edesc;etype=Some (Primitive Int)};
+                | Float _ -> {edesc;etype=Some (Primitive Float)};
+                | Char _ -> {edesc;etype=Some (Primitive Char)};
+                | Boolean _ -> {edesc;etype=Some (Primitive Boolean)};
+                | Null _ -> print_string "String todo\n"; exp;
+            );
             | Name name -> print_string ("name: "^name^"\n"); exp;
             | Post(exp,op) -> process_expression exp; print_string ((AST.string_of_postfix_op op)^"\n"); exp;
             | Pre(op,exp) -> print_string ((AST.string_of_prefix_op op)^"\n"); process_expression exp;
@@ -63,6 +73,7 @@ let rec process_astattributes astattributes =
         | None -> print_string "No default\n"; None;
         | Some exp -> Some (process_expression exp);
         ) in
+        ( match def with Some {AST.edesc; AST.etype} -> match etype with None -> print_string "Default not typed\n" | Some t -> print_string ("default typed as "^(stringOf t)^"\n"));
         {AST.amodifiers;aname;atype;adefault=def}::(process_astattributes l);;
         
 let rec process_arguments arguments =
@@ -87,9 +98,9 @@ let rec process_astmethods astmethods =
 let process_astclass ac =
     match ac with {AST.cparent; AST.cattributes; AST.cinits; AST.cconsts; cmethods; ctypes; cloc} ->
         print_string "\nattributes\n";
-        process_astattributes cattributes;
+        let tribute = process_astattributes cattributes in
         print_string "\nmethods\n";
-        {AST.cparent;cattributes; cinits; cconsts; cmethods=(process_astmethods cmethods); ctypes; cloc};;
+        {AST.cparent;cattributes=tribute; cinits; cconsts; cmethods=(process_astmethods cmethods); ctypes; cloc};;
 
 let rec process_type_list l =
     match l with

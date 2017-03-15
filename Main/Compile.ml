@@ -14,8 +14,8 @@ let execute lexbuf verbose =
             | Some l -> AST.print_package l;
         );
         (* the same tree, but all the expressions are typed *)
-        let tast = Typing.process_type_list type_list in ();
-        print_string "\n\n+++++++++++++++++++++++++++++++++\nsecond pass, should display the types of the expressions(and someday it will)\n\n";
+        let tast = Typing.process_type_list type_list in 
+        print_string "\n\n+++++++++++++++++++++++++++++++++\nsecond pass, should display the types of the expressions as they have been determined at the previous step\n(and someday it will !)\n\n";
         let tast = Typing.process_type_list tast in ();
 
    (*     let tast = Typing.typing ast in (); *)
