@@ -5,6 +5,7 @@ exception NonBooleanCondition;;
 exception BadTypeDefaultValue;;
 exception IncoherentTypes;;
 exception UnknownMethod;;
+exception UnknownAttribute;;
 
 type env = {methods: AST.astmethod list ; attributes: AST.astattribute list};;
 
@@ -13,10 +14,18 @@ let build_env env ac =
         match methods with
         | [] -> []
         | {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody}::l ->
-                print_string ("adding "^mname^" to env\n");
-                {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody=[]}::(aux l)
-    in match env,ac with {methods;attributes},{AST.cparent; AST.cattributes; AST.cinits; AST.cconsts; cmethods; ctypes; cloc} ->
-        {methods=(aux cmethods)@methods;attributes};;
+                print_string ("adding method "^mname^" to env\n");
+                {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody=[]}::(aux l);
+    in 
+    let rec aux2 attributes =
+        match attributes with
+        | [] -> []
+        | {AST.amodifiers;aname;atype;adefault}::l ->
+                print_string ("adding attribute "^aname^" to the env\n");
+                {AST.amodifiers;aname;atype;adefault=None}::(aux2 l);
+    in          
+    match env,ac with {methods;attributes},{AST.cparent; AST.cattributes; AST.cinits; AST.cconsts; cmethods; ctypes; cloc} ->
+        {methods=(aux cmethods)@methods;attributes=(aux2 cattributes)};;
         
 (* How does this make any sense ? Typing a type ? Was used for verbosity purpose, will be removed before the typer is over. *)
 let rec process_t t =
@@ -60,6 +69,10 @@ let rec process_expression env exp:AST.expression =
                                                 if a=t.AST.ptype
                                                 then aux2 args argstype
                                                 else (print_string "wrong argtype\n"; false);
+                                        | {AST.edesc;etype=None}::args,t::argstype ->
+                                                print_string "Couldn't type one of the argument\n";
+                                                false; (* ... *)
+
                                     in
                                     if (aux2 args m.margstype)
                                     then (print_string "ok this is the right method\n"; Some m;)
@@ -129,7 +142,22 @@ let rec process_expression env exp:AST.expression =
                 | Boolean _ -> {edesc;etype=Some (Primitive Boolean)};
                 | Null _ -> print_string "String todo\n"; exp;
             );
-            | Name name -> print_string ("name: "^name^"\n"); exp;
+            | Name name -> 
+                    print_string ("naming "^name^"\n");
+                    print_string ("looking up "^name^" in env.attributes\n");
+                    let rec aux attributes = match attributes with
+                    | [] -> print_string "I don't think this attribute is in env.\n"; None
+                    | a::attributes -> match a with {AST.amodifiers;aname;atype;adefault} ->
+                            if aname=name
+                            then (print_string "found it !\n"; Some a;)
+                            else aux attributes;
+                    in 
+                    (
+                        match aux env.attributes with
+                        | None -> raise UnknownAttribute;
+                        | Some a -> {edesc;etype=Some a.atype}
+                    );
+            
             | Post(exp,op) -> 
                     let r = process_expression env exp in
                     (
