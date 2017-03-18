@@ -61,7 +61,15 @@ let rec process_expression env exp:AST.expression =
                     let e = List.map (process_expression env) params in 
                     print_string "end new\n";
                     {edesc=AST.New (name,id,e);etype=Some (Ref {tpath;tid})};
-            | NewArray(_,_,_) -> print_string "newarray todo\n"; exp;
+            | NewArray(t,l,init) ->
+                    print_string ("new "^(Type.stringOf t)^" array\n");
+                    let aux e = match e with
+                    | None -> None;
+                    | Some e -> Some (process_expression env e);
+                    in
+                    let l = List.map aux l in
+                    let init = aux init in 
+                    {edesc=NewArray(t,l,init);etype=Some (Array(t,List.length l))};
             | Call(o,id,args) ->
                     print_string ("calling "^id^"\n");
                     print_string "evaluating args\n";
@@ -174,8 +182,41 @@ let rec process_expression env exp:AST.expression =
                         | None -> raise UnknownAttribute;
                         | Some a -> {edesc;etype=Some a.atype}
                    );
-            | ArrayInit _ -> print_string "array init\n"; exp;
-            | Array (_,_) -> print_string "array\n"; exp;
+            | ArrayInit l ->
+                    print_string "array init\n";
+                    let l = List.map (process_expression env) l in
+                    let rec aux l =
+                        match l with
+                        | [] -> print_string "I don't think this case should happen ever ...\n"; ()
+                        | [x] -> ()
+                        | x::y::l -> 
+                                match x.AST.etype,y.etype with
+                                | Some xt, Some yt ->
+                                    if xt=yt
+                                    then aux (y::l)
+                                    else (print_string ("ArrayInit as inconsitent types : "^(Type.stringOf xt)^" vs "^(stringOf yt)^"\n"); raise IncoherentTypes; aux (y::l));
+                                | _,_ -> print_string "Couldn't type the init expression\n";
+                    in
+                    aux l;
+                    (
+                        match l with {edesc;etype}::_ -> match etype with
+                        (* Something does not work with 2D arrays here ... *)
+                        | Some(Array(t,i)) -> {edesc=ArrayInit l;etype=Some(Array(Array(t,i),i+1))};
+                        | Some t -> {edesc=ArrayInit l; etype=Some(Array(t,1))};
+                        | None -> {edesc=ArrayInit l;etype=None} (* yeah we could look further into the array for Some t, but whatever*)
+                    );
+            | Array (e,l) -> 
+                    let e = process_expression env e in
+                    let l = List.map (fun x -> match x with None -> print_string "Probably not supported\n"; None | Some x -> Some (process_expression env x)) l in
+                    (
+                        match e with
+                        | {edesc;etype=Some(Array(t,i))} -> 
+                                if i=(List.length(l))
+                                then {edesc;etype=Some t}
+                                else {edesc;etype=Some(Array(t,i-List.length(l)))};
+                        | _ -> "What ? Aren't you accessing an array ?\n"; exp;
+                    );
+
             | AssignExp (_,_,_) -> print_string "assignexp\n"; exp;
             | Post(exp,op) -> 
                     let r = process_expression env exp in
@@ -240,7 +281,7 @@ let rec process_statement env statement =
                         | Some t2 ->
                                 if t=t2
                                 then ()
-                                else raise IncoherentTypes;
+                                else (print_string ("init expression has a different type than variable\ "^(Type.stringOf t)^" vs "^(stringOf t2)^"\n"); raise IncoherentTypes;);
                                 (t,s,Some e)::l
                 )
             in
@@ -302,15 +343,19 @@ let rec process_astattributes env astattributes =
             | Some exp -> Some (process_expression env exp);
         ) in
         ( 
-            match def with Some {AST.edesc; AST.etype} ->
-                match etype with 
-                | None -> 
-                        print_string "Default not typed\n" ;
-                | Some t -> 
-                        print_string ("default typed as "^(stringOf t)^"\n");
-                        if atype=t 
-                        then print_string "init value type correct\n"
-                        else (print_string ("wrong init value type ! "^(stringOf atype)^" vs "^(stringOf t)^"\n"); raise BadTypeDefaultValue;)
+            match def with
+            | Some {AST.edesc; AST.etype} ->
+                    (
+                    match etype with 
+                    | None -> 
+                            print_string "Default not typed\n" ;
+                    | Some t -> 
+                            print_string ("default typed as "^(stringOf t)^"\n");
+                            if atype=t 
+                            then print_string "init value type correct\n"
+                            else (print_string ("wrong init value type ! "^(stringOf atype)^" vs "^(stringOf t)^"\n"); raise BadTypeDefaultValue;)
+                    )
+            | None -> ();
         );
         {AST.amodifiers;aname;atype;adefault=def}::(process_astattributes env l);;
         
