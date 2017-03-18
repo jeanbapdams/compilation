@@ -42,8 +42,25 @@ let rec process_expression env exp:AST.expression =
         | Some etype -> print_string ("Expression of type: "^(stringOf etype)^"\n"); exp;
         | None -> print_string "Etype not defined yet\n";
         (
-        match edesc with
-            | New(Some name,id,params) -> print_string ("new "^name^": "^(AST.string_of_expression_desc edesc)); exp;
+            match edesc with
+            | New(name,id,params) -> 
+                    let rec aux l =
+                        match l with
+                        | [] -> print_string "I don't think this should be happening ...\n"; [],"";
+                        | [x] -> [],x;
+                        | x::l -> match aux l with tpath,tid -> x::tpath,tid;
+                    in
+                    let (tpath,tid) = aux id in
+                    print_string ("new "^tid^"\n");
+                    (
+                    match name with
+                    | None -> print_string "no name\n";
+                    | Some name -> print_string ("name "^name^"\n");
+                    );
+                    print_string "expressions\n";
+                    let e = List.map (process_expression env) params in 
+                    print_string "end new\n";
+                    {edesc=AST.New (name,id,e);etype=Some (Ref {tpath;tid})};
             | NewArray(_,_,_) -> print_string "newarray todo\n"; exp;
             | Call(o,id,args) ->
                     print_string ("calling "^id^"\n");
@@ -156,8 +173,10 @@ let rec process_expression env exp:AST.expression =
                         match aux env.attributes with
                         | None -> raise UnknownAttribute;
                         | Some a -> {edesc;etype=Some a.atype}
-                    );
-            
+                   );
+            | ArrayInit _ -> print_string "array init\n"; exp;
+            | Array (_,_) -> print_string "array\n"; exp;
+            | AssignExp (_,_,_) -> print_string "assignexp\n"; exp;
             | Post(exp,op) -> 
                     let r = process_expression env exp in
                     (
@@ -207,6 +226,25 @@ let rec process_expression env exp:AST.expression =
 
 let rec process_statement env statement =
     match statement with
+    | AST.VarDecl l ->
+            print_string "VarDecl\n";
+            let rec aux l =
+                (
+                match l with
+                | [] -> []
+                | (t,s,None)::l -> (t,s,None)::(aux l);
+                | (t,s,Some e)::l ->
+                        let e = process_expression env e in
+                        match e.AST.etype with
+                        | None -> print_string "Couldn't type the init expression ...\n"; (t,s,Some e)::l
+                        | Some t2 ->
+                                if t=t2
+                                then ()
+                                else raise IncoherentTypes;
+                                (t,s,Some e)::l
+                )
+            in
+            AST.VarDecl (aux l);
     | AST.Block statements ->
             print_string "start block\n";
             let r = AST.Block(List.map (process_statement env) statements) in
