@@ -160,12 +160,12 @@ let rec process_expression env exp:AST.expression =
             (
                 print_string "++defining value type\n";
                 match value with
-                | String _ -> print_string "String todo\n"; exp;
+                | String _ -> {edesc;etype=Some(Ref({Type.tpath=["Object"];tid="String"}))};
                 | Int _ -> {edesc;etype=Some (Primitive Int)};
                 | Float _ -> {edesc;etype=Some (Primitive Float)};
                 | Char _ -> {edesc;etype=Some (Primitive Char)};
                 | Boolean _ -> {edesc;etype=Some (Primitive Boolean)};
-                | Null _ -> print_string "String todo\n"; exp;
+                | Null _ -> {edesc;etype=Some(Ref({Type.tpath=[];tid="Null"}))};
             );
             | Name name -> 
                     print_string ("naming "^name^"\n");
@@ -380,10 +380,10 @@ let rec process_astattributes env astattributes =
         
 let rec process_arguments arguments =
     match arguments with
-    | [] -> ()
+    | [] -> []
     | {AST.final;vararg;ptype;pident}::l ->
-        process_t ptype;
-        process_arguments l;;
+            print_string ((Type.stringOf ptype)^" "^pident^"\n");
+            {AST.amodifiers=[];aname=pident;atype=ptype;adefault=None}::(process_arguments l);;
 
 let rec process_astmethods env astmethods =
     match astmethods with
@@ -392,7 +392,8 @@ let rec process_astmethods env astmethods =
         print_string ("modifiers: "^(ListII.concat_map " " AST.stringOf_modifier mmodifiers)^"\n");
         print_string ("name: "^mname^"\n");
         print_string "return type: "; process_t mreturntype;
-        print_string "args: "; process_arguments margstype;
+        print_string "args: "; let args = process_arguments margstype
+        in let env = {methods=env.methods;attributes=args@env.attributes} in (* add the arguments of the method to the list of the local variables *)
         print_string "body: \n";
         (* this is copypasted from the Block statement *)
         let rec aux env statements =
