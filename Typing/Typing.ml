@@ -283,33 +283,50 @@ let rec process_statement env statement =
                                 then ()
                                 else (print_string ("init expression has a different type than variable\ "^(Type.stringOf t)^" vs "^(stringOf t2)^"\n"); raise IncoherentTypes;);
                                 (t,s,Some e)::l
-                )
-            in
-            AST.VarDecl (aux l);
+                ) in
+            let rec aux2 l =
+                (
+                match l with
+                | [] -> []
+                | (t,s,def)::l -> {AST.amodifiers=[];aname=s;atype=t;adefault=def}::(aux2 l)
+                ) in
+            {methods=env.methods;attributes=(aux2 l)@env.attributes},AST.VarDecl (aux l);
+
     | AST.Block statements ->
             print_string "start block\n";
-            let r = AST.Block(List.map (process_statement env) statements) in
+            let rec aux env statements =
+                match statements with
+                | [] -> [];
+                | statement::statements ->
+                        let env,statement = process_statement env statement in (* here env as local variables added, e.g if the first statement is a VarDecl *)
+                        statement::(aux env statements);                        (* and thus the local variable is available in the next statements *)
+            in
+            let r = AST.Block(aux env statements) in
             print_string "end block\n";
-            r;
-    | Nop -> print_string "nope\n"; statement;
+            env,r;  (* but here the env is the same as we received, so the local variables stay local *)
+
+    | Nop -> print_string "nope\n"; env,statement;
+
     | While(exp,statement) -> 
             print_string "while\n";
-            let r = AST.While(process_expression env exp, process_statement env statement) in
+            let r = AST.While(process_expression env exp, (match process_statement env statement with env,statement -> statement)) in
             (
                 match r with AST.While({edesc;etype},_) ->
                     if etype=Some (Primitive Boolean)
                     then print_string "condition is boolean OK\n"
                     else (print_string "condtion is not boolean NOT OK\n"; raise NonBooleanCondition)
                     print_string "end while\n";
-            ); r;
+            ); env,r;
+
     | For(truc1,truc2,truc3,statement) ->
             print_string "for need some more work\n";
-            let r = AST.For(truc1,truc2,truc3, process_statement env statement) in
+            let r = AST.For(truc1,truc2,truc3, (match process_statement env statement with env,statement -> statement)) in
             print_string "end for\n";
-            r;
+            env,r;
+
     | If(cond,iftrue,iffalse) -> 
             print_string "if\n";
-            let r = AST.If(process_expression env cond, process_statement env iftrue, (match iffalse with None -> None | Some statement -> Some (process_statement env statement))) in
+            let r = AST.If(process_expression env cond, (match process_statement env iftrue with env,statement -> statement), (match iffalse with None -> None | Some statement -> Some (match process_statement env statement with env,statement -> statement))) in
             (
                 match r with 
                     | AST.If({edesc;etype},_,_) ->
@@ -318,15 +335,17 @@ let rec process_statement env statement =
                         else (print_string "condtion is not boolean NOT OK\n"; raise NonBooleanCondition);
             );
             print_string "end if\n";
-            r;
+            env,r;
     | Return exp ->
             (
                 match exp with 
-                | None -> print_string "return void\n"; AST.Return None;
-                | Some exp -> print_string "return\n"; let r = AST.Return( Some (process_expression env exp)) in print_string "end return\n"; r;
+                | None -> print_string "return void\n"; env, AST.Return None;
+                | Some exp -> print_string "return\n"; let r = AST.Return( Some (process_expression env exp)) in print_string "end return\n"; env,r;
             );
-    | AST.Expr expr -> Expr(process_expression env expr);
-    | _ -> print_string "statement todo\n"; statement;
+
+    | AST.Expr expr -> env,Expr(process_expression env expr);
+
+    | _ -> print_string "statement todo\n"; env,statement;
 ;;
 
 let rec process_astattributes env astattributes =
@@ -375,8 +394,15 @@ let rec process_astmethods env astmethods =
         print_string "return type: "; process_t mreturntype;
         print_string "args: "; process_arguments margstype;
         print_string "body: \n";
-        let b = (List.map (process_statement env) mbody);
+        (* this is copypasted from the Block statement *)
+        let rec aux env statements =
+            match statements with
+            | [] -> [];
+            | statement::statements ->
+                    let env,statement = process_statement env statement in (* here env as local variables added, e.g if the first statement is a VarDecl *)
+                    statement::(aux env statements);                        (* and thus the local variable is available in the next statements *)
         in
+        let b = aux env mbody in 
         {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody=b}::(process_astmethods env l);;
 
 let process_astclass env ac =
