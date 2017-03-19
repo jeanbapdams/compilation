@@ -1,0 +1,14 @@
+Some of the big issues remaining with the typer :
+
+- no dynamic casting between int, float etc ...
+5+1.0 will raise an IncoherentTypes error
+The typer also does not realize that String and Object.String are the same type, so
+
+void display(String s) { ... }
+display("hello")
+
+does not workd, cause "hello" is typed as Object.String
+
+- arrays : more than 1D will probably not be typed correctly
+
+- the environment variable only consider one class at a time, so you can't use the methods and attributes of another class

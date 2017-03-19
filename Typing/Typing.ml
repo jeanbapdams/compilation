@@ -7,8 +7,10 @@ exception IncoherentTypes;;
 exception UnknownMethod;;
 exception UnknownAttribute;;
 
+(* registers known functions and variables at any point in the AST *)
 type env = {methods: AST.astmethod list ; attributes: AST.astattribute list};;
 
+(* add the list of attributes and methods of a given class to the preexisting env *)
 let build_env env ac = 
     let rec aux methods =
         match methods with
@@ -27,22 +29,19 @@ let build_env env ac =
     match env,ac with {methods;attributes},{AST.cparent; AST.cattributes; AST.cinits; AST.cconsts; cmethods; ctypes; cloc} ->
         {methods=(aux cmethods)@methods;attributes=(aux2 cattributes)};;
         
-(* How does this make any sense ? Typing a type ? Was used for verbosity purpose, will be removed before the typer is over. *)
-let rec process_t t =
-    match t with
-    | Void -> print_string "Void\n"
-    | Array(t,i) -> print_string "array\ntype: ";process_t t; print_string "dim: ";print_int i;print_string "\n";
-    | Primitive p -> print_string ("primitive "^(Type.stringOf t)^"\n");
-    | Ref r -> print_string ("ref "^(Type.stringOf t)^"\n");;
-
-(*the big stuff, adding the type information to the expressions*)
+(* the big stuff, adding the type information to the expressions *)
+(* if the field etype is Some type, we consider the expression was already typed, not verifications made *)
+(* if it is None, we try to fill it with the information of env and of the edesc field *)
+(* the edesc field is unmodified *)
+(* still very verbose, helps with debugging *)
 let rec process_expression env exp:AST.expression = 
     match exp with {AST.edesc; AST.etype} ->
         match etype with
-        | Some etype -> print_string ("Expression of type: "^(stringOf etype)^"\n"); exp;
-        | None -> print_string "Etype not defined yet\n";
+        | Some etype -> print_string ("Expression "^(AST.string_of_expression_desc edesc)^" of type: "^(stringOf etype)^"\n"); exp;
+        | None -> print_string ("type of "^(AST.string_of_expression_desc edesc)^"  not defined yet\n");
         (
             match edesc with
+
             | New(name,id,params) -> 
                     let rec aux l =
                         match l with
@@ -61,6 +60,7 @@ let rec process_expression env exp:AST.expression =
                     let e = List.map (process_expression env) params in 
                     print_string "end new\n";
                     {edesc=AST.New (name,id,e);etype=Some (Ref {tpath;tid})};
+
             | NewArray(t,l,init) ->
                     print_string ("new "^(Type.stringOf t)^" array\n");
                     let aux e = match e with
@@ -70,76 +70,77 @@ let rec process_expression env exp:AST.expression =
                     let l = List.map aux l in
                     let init = aux init in 
                     {edesc=NewArray(t,l,init);etype=Some (Array(t,List.length l))};
+
             | Call(o,id,args) ->
                     print_string ("calling "^id^"\n");
                     print_string "evaluating args\n";
-                    let args = List.map (process_expression env) args in
+                    let args = List.map (process_expression env) args in (* type the arguments *)
                     print_string ("looking up "^id^" in env.methods\n");
+                    (* look for a function with the right signature in the env *)
                     let rec aux methods = match methods with
                     | [] -> print_string "I don't think this method is in env\n"; None
                     | m::methods ->
-                            print_string ("considering "^m.AST.mname^"\n");
-                            if m.AST.mname=id
+                            if m.AST.mname=id (* right name*)
                             then 
                             (
-                                print_string "that could be it ! Checking the type of the arguments\n";
-                                if (List.length args) = (List.length m.margstype)
+                                if (List.length args) = (List.length m.margstype) (* check the number of arguments *)
                                 then
                                 (
-                                    print_string "right number of args\n";
+                                    (* checks if each argument as the right type compared to the function signature *)
                                     let rec aux2 args argstype =
                                         match args,argstype with
                                         | [],[] -> true;
                                         | {AST.edesc;etype=Some a}::args,t::argstype ->
                                                 if a=t.AST.ptype
                                                 then aux2 args argstype
-                                                else (print_string "wrong argtype\n"; false);
+                                                else false;
                                         | {AST.edesc;etype=None}::args,t::argstype ->
                                                 print_string "Couldn't type one of the argument\n";
-                                                false; (* ... *)
+                                                false; (* refuse to call a function if we're not sure it's the right argument type, safer but ... *)
 
                                     in
                                     if (aux2 args m.margstype)
                                     then (print_string "ok this is the right method\n"; Some m;)
                                     else aux methods;
                                 )
-                                else
-                                (
-                                    print_string "wrong number of args\n";
-                                    aux methods;
-                                )
+                                else aux methods;
+                                
                             )
-                            else (print_string "that's not it\n"; aux methods);
+                            else aux methods;
                     in 
                     (
                         match aux env.methods with
-                        | None -> raise UnknownMethod;
-                        | Some m -> {edesc;etype=Some m.mreturntype};
+                        | None -> raise UnknownMethod; (* couldn't find the method in env *)
+                        | Some m -> {edesc;etype=Some m.mreturntype}; (* the Call expression as the type of the returned type of the method called *)
                     );
 
-            | Attr(expr,id) -> print_string "attribute "; print_string (id^" of\n"); process_expression env expr;
+            | Attr(expr,id) -> print_string "attribute "; print_string (id^" of\n"); process_expression env expr; 
+            (* this is wrong, we should type expr, and use env (?) to see if this is an object with an attribute named id *)
+            (* but the env does not hold enough information for this at the moment, I think (only consider one class at a time *)
+
             | CondOp(condition, iftrue, iffalse) -> 
                     print_string ("condop\n");
-                    let r =  AST.CondOp((process_expression env condition), (process_expression env iftrue), (process_expression env iffalse)) in
+                    let r =  AST.CondOp((process_expression env condition), (process_expression env iftrue), (process_expression env iffalse)) in (* types each of the expressions *)
                     (
-                    match r with CondOp({edesc=_;etype=etypecond}, {edesc=_;etype=etypetrue}, {edesc=_;etype=etypefalse}) ->
-                        if etypecond=Some (Primitive Boolean)
-                        then print_string "condition is boolean, ok\n"
-                        else begin 
-                            print_string "condition is NOT boolean, NOT OK\n"; 
-                            raise NonBooleanCondition;
-                        end;
-                        if etypetrue=etypefalse
-                        then print_string "true and false case have same type, ok\n"
-                        else begin
-                            print_string "true and false case have NOT same type, NOT ok\n"; 
-                            raise IncoherentTypes;
-                        end
-                        print_string "end condop\n";
-                        {edesc=r; etype=etypetrue};
+                        (* checks that the condition is boolean and both possibles return values have the same type *)
+                        match r with CondOp({edesc=_;etype=etypecond}, {edesc=_;etype=etypetrue}, {edesc=_;etype=etypefalse}) ->
+                            if etypecond=Some (Primitive Boolean)
+                            then ()
+                            else begin 
+                                print_string "condition is NOT boolean, NOT OK\n"; 
+                                raise NonBooleanCondition;
+                            end;
+                            if etypetrue=etypefalse
+                            then ()
+                            else begin
+                                print_string "true and false case have NOT same type, NOT ok\n"; 
+                                raise IncoherentTypes;
+                            end
+                            print_string "end condop\n";
+                            {edesc=r; etype=etypetrue};
                     );
 
-            (* This is put on hold as there seems to be interferences between the two definitions of If as
+(* This is put on hold as there seems to be interferences between the two definitions of If as
  * If of expression * statement * statement option
  * which means if truc then machin else chose
  * and
@@ -148,25 +149,27 @@ let rec process_expression env exp:AST.expression =
  * (I think)
  * First case is a statement, second case is an expression
  * here despite  using :AST.expression, ocaml keep thinking that If(...) is a stament, when it should be an expression
- * turns out, I was mistaking If for CondOp, but it does not solve the If problem if it arrises later
+ *
+ * *later*
+ * turns out, I was mistaking If expression for CondOp expression, but it does not solve the problem
  * also I don't know what the If is supposed to be as an expression, I wonder if it is not actually used, was replaced by condop and forgotten ... poor If expression
  * for the record, the error was on the following :
  * AST.If((process_expression env condition), (process_expression env iftrue), (process_expression env iffalse))
  *)
 
-            | If(_,_,_) -> exp;
+            | If(_,_,_) -> print_string "If you see this at runtime, please fix it\n"; exp;
 
-            | Val value -> print_string ("value: "^(AST.string_of_value value)^"\n");
+            | Val value -> 
             (
-                print_string "++defining value type\n";
                 match value with
-                | String _ -> {edesc;etype=Some(Ref({Type.tpath=["Object"];tid="String"}))};
+                | String _ -> {edesc;etype=Some(Ref({Type.tpath=["Object"];tid="String"}))}; (* not sure if this is how it's supposed to be used *)
                 | Int _ -> {edesc;etype=Some (Primitive Int)};
                 | Float _ -> {edesc;etype=Some (Primitive Float)};
                 | Char _ -> {edesc;etype=Some (Primitive Char)};
                 | Boolean _ -> {edesc;etype=Some (Primitive Boolean)};
-                | Null _ -> {edesc;etype=Some(Ref({Type.tpath=[];tid="Null"}))};
+                | Null _ -> {edesc;etype=Some(Ref({Type.tpath=[];tid="Null"}))}; (* not sure about this either, according to internet Null does not have a type *)
             );
+
             | Name name -> 
                     print_string ("naming "^name^"\n");
                     print_string ("looking up "^name^" in env.attributes\n");
@@ -179,12 +182,14 @@ let rec process_expression env exp:AST.expression =
                     in 
                     (
                         match aux env.attributes with
-                        | None -> raise UnknownAttribute;
-                        | Some a -> {edesc;etype=Some a.atype}
+                        | None -> raise UnknownAttribute; (* no attribute with such a name found *)
+                        | Some a -> {edesc;etype=Some a.atype} (* we found the attribtue in env so we know its type *)
                    );
+
             | ArrayInit l ->
                     print_string "array init\n";
                     let l = List.map (process_expression env) l in
+                    (* check that all the values in the init array have the same type, in which cas that's the type of the array, otherwise, raise error *)
                     let rec aux l =
                         match l with
                         | [] -> print_string "I don't think this case should happen ever ...\n"; ()
@@ -199,12 +204,15 @@ let rec process_expression env exp:AST.expression =
                     in
                     aux l;
                     (
+                        (* if the type of the init elements is an array, then we have an array of dim +1, otherwise it's a 1D array *)
+                        (* but something braks with not 1D arrays *)
                         match l with {edesc;etype}::_ -> match etype with
-                        (* Something does not work with 2D arrays here ... *)
                         | Some(Array(t,i)) -> {edesc=ArrayInit l;etype=Some(Array(Array(t,i),i+1))};
                         | Some t -> {edesc=ArrayInit l; etype=Some(Array(t,1))};
                         | None -> {edesc=ArrayInit l;etype=None} (* yeah we could look further into the array for Some t, but whatever*)
                     );
+
+                    (* don't expect the following to work if do something more complicated than accessing a 1D array *)
             | Array (e,l) -> 
                     let e = process_expression env e in
                     let l = List.map (fun x -> match x with None -> print_string "Probably not supported\n"; None | Some x -> Some (process_expression env x)) l in
@@ -212,12 +220,15 @@ let rec process_expression env exp:AST.expression =
                         match e with
                         | {edesc;etype=Some(Array(t,i))} -> 
                                 if i=(List.length(l))
-                                then {edesc;etype=Some t}
-                                else {edesc;etype=Some(Array(t,i-List.length(l)))};
-                        | _ -> "What ? Aren't you accessing an array ?\n"; exp;
+                                then {edesc;etype=Some t} (* easy case where you access a single element *)
+                                else {edesc;etype=Some(Array(t,i-List.length(l)))}; (* if you access a sub-array, something like int[][] t = ... ; t[0] would be an int[] *)
+                        | _ -> "What ? Aren't you accessing an array ?\n"; exp; (* if etype is not Some Array *)
                     );
 
             | AssignExp (_,_,_) -> print_string "assignexp\n"; exp;
+
+            (* for the two follwing cases, we consider that those operations are only defined on primitive types *)
+            (* not sure if it is correct, even if you can't overload operators in java ... *)
             | Post(exp,op) -> 
                     let r = process_expression env exp in
                     (
@@ -228,14 +239,27 @@ let rec process_expression env exp:AST.expression =
                             else (print_string ("are you sure that you can "^(AST.string_of_postfix_op op)^" a "^(stringOf t)^" ? I'm not\n"); raise IncoherentTypes);
                             {AST.edesc=Post(r,op);etype=Some t};
                     | {edesc;etype=None} -> 
-                            print_string "troubles\n";
+                            print_string "troubles typing expression\n";
                             {AST.edesc=Post(r,op);etype=None};
                     );
+
             | Pre(op,exp) -> 
                     let r = process_expression env exp in
                     (
-                    match r with {edesc;etype} -> {AST.edesc=Pre(op,r);etype}; (* needs more verbosity and verifications as in previous case ... *)
+                    match r with
+                    | {edesc;etype=Some t} ->
+                            if (t=Primitive Short || t=Primitive Int || t=Primitive Long || t=Primitive Float || t=Primitive Double || t=Primitive Char ||t=Primitive Byte)
+                            then print_string ("sure you can "^(AST.string_of_prefix_op op)^" a "^(stringOf t)^".\n")
+                            else (print_string ("are you sure that you can "^(AST.string_of_prefix_op op)^" a "^(stringOf t)^" ? I'm not\n"); raise IncoherentTypes);
+                            {AST.edesc=Pre(op,r);etype=Some t};
+                    | {edesc;etype=None} -> 
+                            print_string "troubles typing expression\n";
+                            {AST.edesc=Pre(op,r);etype=None};
                     );
+
+            (* should add the same verifications as the previous case ... *)
+            (* for the moment just check that both sides of the operators are of the same type, and consider that the return typed is the same *)
+            (* some counter-example could probably be found *)
             | Op(exp1,op,exp2) -> 
                     let r1 = process_expression env exp1 and r2 = process_expression env exp2 in
                     (
@@ -250,17 +274,23 @@ let rec process_expression env exp:AST.expression =
                                 print_string "troubles\n"; 
                                 {edesc=AST.Op(r1,op,r2);etype=None};
                     );
+
+            (* does not check that the cast makes any sense *)
             | Cast (t,exp) ->
                     (
                     match (process_expression env exp) with {edesc;etype = Some etype} ->
                         print_string ("casting from "^(stringOf etype)^" to "^(stringOf t)^" and I don't care if it makes any sense\n");
                         {edesc;etype=Some t};
                     );
-            (* not sure about this one *)
+
+            (* not sure about this one, doesn't type *)
             | Type t -> print_string ("This expression is a type, I don't know what is the type of this type: "^(Type.stringOf t)); exp;
+
             (* not sure about the following two either ...*)
             | ClassOf t -> print_string ("ClassOf: "^(Type.stringOf t)); exp;
-            | Instanceof (exp,t) -> print_string ("InstanceOf: "^(Type.stringOf t)); process_expression env exp;
+            | Instanceof (exp,t) -> print_string ("InstanceOf: "^(Type.stringOf t)); {edesc=Instanceof(process_expression env exp,t);etype=None};
+
+            (* anything that I missed *)
             | _ -> print_string "expression todo\n"; print_string (AST.string_of_expression_desc edesc); print_string "\nend todo\n";  exp;
         )
         ;;
@@ -354,7 +384,6 @@ let rec process_astattributes env astattributes =
     | {AST.amodifiers;aname;atype;adefault}::l ->
         print_string ("modifiers: "^(ListII.concat_map " " AST.stringOf_modifier amodifiers)^"\n");
         print_string ("name: "^aname^"\n");
-        process_t atype;
         let def=
         (
             match adefault with
@@ -389,11 +418,11 @@ let rec process_astmethods env astmethods =
     match astmethods with
     | [] -> [];
     | {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody}::l ->
-        print_string ("modifiers: "^(ListII.concat_map " " AST.stringOf_modifier mmodifiers)^"\n");
-        print_string ("name: "^mname^"\n");
-        print_string "return type: "; process_t mreturntype;
-        print_string "args: "; let args = process_arguments margstype
-        in let env = {methods=env.methods;attributes=args@env.attributes} in (* add the arguments of the method to the list of the local variables *)
+        print_string ("method name : "^mname^"\n");
+        print_string "return type: "; print_string ((Type.stringOf mreturntype)^"\n");
+        let args = process_arguments margstype in
+        print_string "arguments :\n";
+        let env = {methods=env.methods;attributes=args@env.attributes} in (* adds the arguments of the method to the list of the local variables *)
         print_string "body: \n";
         (* this is copypasted from the Block statement *)
         let rec aux env statements =
@@ -404,6 +433,7 @@ let rec process_astmethods env astmethods =
                     statement::(aux env statements);                        (* and thus the local variable is available in the next statements *)
         in
         let b = aux env mbody in 
+        print_string "end body\n\n";
         {AST.mmodifiers;mname;mreturntype;margstype;mthrows;mbody=b}::(process_astmethods env l);;
 
 let process_astclass env ac =
